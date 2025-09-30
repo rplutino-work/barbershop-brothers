@@ -1,0 +1,10 @@
+# Database
+DATABASE_URL="file:./dev.db"
+
+# NextAuth
+NEXTAUTH_SECRET="your-secret-key-here"
+NEXTAUTH_URL="http://localhost:3000"
+
+# Barber Shop Info
+BARBERSHOP_NAME="Barbería Elite"
+BARBERSHOP_LOGO="/logo.png"
