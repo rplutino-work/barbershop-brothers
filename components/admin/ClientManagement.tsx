@@ -32,7 +32,7 @@ export function ClientManagement() {
         const data = await response.json()
         setClients(data)
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al obtener clientes:', error)
     } finally {
       setLoading(false)
@@ -59,7 +59,7 @@ export function ClientManagement() {
         setEditingClient(null)
         setFormData({ name: '', phone: '' })
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al guardar cliente:', error)
     }
   }
@@ -83,7 +83,7 @@ export function ClientManagement() {
         if (response.ok) {
           await fetchClients()
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error al eliminar cliente:', error)
       }
     }

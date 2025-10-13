@@ -149,7 +149,7 @@ export async function GET() {
         createdAt: payment.createdAt
       }))
     })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error al obtener estadísticas:', error)
     return NextResponse.json(
       { error: 'Error interno del servidor' },

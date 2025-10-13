@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
     })
 
     return NextResponse.json(schedule, { status: 201 })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error al crear horario:', error)
     return NextResponse.json(
       { error: 'Error interno del servidor' },
@@ -93,7 +93,7 @@ export async function GET(request: NextRequest) {
     })
 
     return NextResponse.json(schedules)
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error al obtener horarios:', error)
     return NextResponse.json(
       { error: 'Error interno del servidor' },

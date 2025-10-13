@@ -45,7 +45,7 @@ export async function PUT(
     })
 
     return NextResponse.json(payment)
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error al actualizar pago:', error)
     return NextResponse.json(
       { error: 'Error interno del servidor' },

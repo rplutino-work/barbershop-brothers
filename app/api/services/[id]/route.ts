@@ -28,7 +28,7 @@ export async function PUT(
     })
 
     return NextResponse.json(service)
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error al actualizar servicio:', error)
     return NextResponse.json(
       { error: 'Error interno del servidor' },
@@ -52,7 +52,7 @@ export async function DELETE(
     })
 
     return NextResponse.json({ message: 'Servicio desactivado exitosamente' })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error al eliminar servicio:', error)
     return NextResponse.json(
       { error: 'Error interno del servidor' },

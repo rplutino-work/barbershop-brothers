@@ -57,7 +57,7 @@ export default function BarberDashboard() {
         const data = await response.json()
         setStats(data)
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al obtener estadísticas del barbero:', error)
     } finally {
       setLoading(false)

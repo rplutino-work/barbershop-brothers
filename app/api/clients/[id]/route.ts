@@ -56,7 +56,7 @@ export async function DELETE(
     })
 
     return NextResponse.json({ message: 'Cliente eliminado exitosamente' })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error al eliminar cliente:', error)
     return NextResponse.json(
       { error: 'Error interno del servidor' },

@@ -51,7 +51,7 @@ export function DailyServices({ onRegisterNew, onBack }: DailyServicesProps) {
         const data = await response.json()
         setServices(data)
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al obtener servicios del día:', error)
     } finally {
       setLoading(false)
@@ -81,7 +81,7 @@ export function DailyServices({ onRegisterNew, onBack }: DailyServicesProps) {
         setShowEditModal(false)
         setEditingService(null)
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al actualizar servicio:', error)
     }
   }
@@ -288,7 +288,7 @@ function EditServiceModal({
         const clientsData = await clientsRes.json()
         setClients(clientsData)
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al cargar datos:', error)
     } finally {
       setLoading(false)

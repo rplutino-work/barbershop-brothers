@@ -36,7 +36,7 @@ export function BarberManagement() {
         const data = await response.json()
         setBarbers(data)
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al obtener barberos:', error)
     } finally {
       setLoading(false)
@@ -63,7 +63,7 @@ export function BarberManagement() {
         setEditingBarber(null)
         setFormData({ name: '', email: '', password: '', commissionRate: 50 })
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al guardar barbero:', error)
     }
   }
@@ -89,7 +89,7 @@ export function BarberManagement() {
         if (response.ok) {
           await fetchBarbers()
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error al eliminar barbero:', error)
       }
     }

@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     })
 
     return NextResponse.json(payment, { status: 201 })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error al crear pago:', error)
     return NextResponse.json(
       { error: 'Error interno del servidor' },
@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
     })
 
     return NextResponse.json(payments)
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error al obtener pagos:', error)
     return NextResponse.json(
       { error: 'Error interno del servidor' },

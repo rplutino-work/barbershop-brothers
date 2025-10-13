@@ -64,7 +64,7 @@ export function ClientSelector({
               clientsWithHistorySet.add(client.id)
             }
           }
-        } catch (error) {
+        } catch (error: any) {
           console.error(`Error al verificar historial de ${client.name}:`, error)
         }
       }
@@ -83,7 +83,7 @@ export function ClientSelector({
         const data = await response.json()
         setClients(data)
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al cargar clientes:', error)
     } finally {
       setLoading(false)
@@ -111,7 +111,7 @@ export function ClientSelector({
         const error = await response.json()
         alert(error.error || 'Error al crear cliente')
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al crear cliente:', error)
       alert('Error al crear cliente')
     }
@@ -138,7 +138,7 @@ export function ClientSelector({
       } else {
         console.error('Error en la respuesta:', response.status)
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al obtener historial del cliente:', error)
     }
   }

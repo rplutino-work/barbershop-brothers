@@ -39,7 +39,7 @@ export function BarberAppointments({ barberId }: BarberAppointmentsProps) {
         const data = await response.json()
         setAppointments(data)
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al obtener turnos:', error)
     } finally {
       setLoading(false)
@@ -62,7 +62,7 @@ export function BarberAppointments({ barberId }: BarberAppointmentsProps) {
         const error = await response.json()
         alert(error.error || 'Error al actualizar turno')
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al actualizar turno:', error)
       alert('Error al actualizar turno')
     }

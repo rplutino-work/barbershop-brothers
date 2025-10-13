@@ -26,7 +26,7 @@ export async function PUT(
     })
 
     return NextResponse.json(schedule)
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error al actualizar horario:', error)
     return NextResponse.json(
       { error: 'Error interno del servidor' },
@@ -49,7 +49,7 @@ export async function DELETE(
     })
 
     return NextResponse.json({ message: 'Horario desactivado exitosamente' })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error al eliminar horario:', error)
     return NextResponse.json(
       { error: 'Error interno del servidor' },

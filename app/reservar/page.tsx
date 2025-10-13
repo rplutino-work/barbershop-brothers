@@ -77,7 +77,7 @@ export default function ReservarPage() {
         })
         setBarbers(Array.from(barberMap.values()))
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al obtener barberos:', error)
     }
   }
@@ -149,7 +149,7 @@ export default function ReservarPage() {
         const data = await response.json()
         setServices(data.filter((service: any) => service.isActive))
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al obtener servicios:', error)
     }
   }
@@ -215,7 +215,7 @@ export default function ReservarPage() {
         const error = await response.json()
         alert(error.error || 'Error al crear la reserva')
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al crear reserva:', error)
       alert('Error al crear la reserva')
     } finally {

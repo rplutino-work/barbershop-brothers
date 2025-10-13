@@ -18,7 +18,7 @@ export async function GET() {
     })
 
     return NextResponse.json(users)
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error al obtener usuarios:', error)
     return NextResponse.json(
       { error: 'Error interno del servidor' },
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
     })
 
     return NextResponse.json(user, { status: 201 })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error al crear usuario:', error)
     return NextResponse.json(
       { error: 'Error interno del servidor' },

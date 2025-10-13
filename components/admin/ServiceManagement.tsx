@@ -36,7 +36,7 @@ export function ServiceManagement() {
         const data = await response.json()
         setServices(data)
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al obtener servicios:', error)
     } finally {
       setLoading(false)
@@ -63,7 +63,7 @@ export function ServiceManagement() {
         setEditingService(null)
         setFormData({ name: '', price: '', duration: '30', description: '' })
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al guardar servicio:', error)
     }
   }
@@ -89,7 +89,7 @@ export function ServiceManagement() {
         if (response.ok) {
           await fetchServices()
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error al eliminar servicio:', error)
       }
     }

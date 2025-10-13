@@ -52,7 +52,7 @@ export function ScheduleManagement() {
         const barbersData = users.filter((user: any) => user.role === 'BARBER')
         setBarbers(barbersData)
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al obtener barberos:', error)
     }
   }
@@ -65,7 +65,7 @@ export function ScheduleManagement() {
         const data = await response.json()
         setSchedules(data)
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al obtener horarios:', error)
     } finally {
       setLoading(false)
@@ -105,7 +105,7 @@ export function ScheduleManagement() {
         const error = await response.json()
         alert(error.error || 'Error al guardar horario')
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al guardar horario:', error)
       alert('Error al guardar horario')
     } finally {
@@ -140,7 +140,7 @@ export function ScheduleManagement() {
         const error = await response.json()
         alert(error.error || 'Error al eliminar horario')
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al eliminar horario:', error)
       alert('Error al eliminar horario')
     }

@@ -21,7 +21,7 @@ export async function GET(
     })
 
     return NextResponse.json(payments)
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error al obtener historial del cliente:', error)
     return NextResponse.json(
       { error: 'Error interno del servidor' },

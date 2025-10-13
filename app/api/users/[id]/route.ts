@@ -42,7 +42,7 @@ export async function PUT(
     })
 
     return NextResponse.json(user)
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error al actualizar usuario:', error)
     return NextResponse.json(
       { error: 'Error interno del servidor' },
@@ -71,7 +71,7 @@ export async function DELETE(
     })
 
     return NextResponse.json({ message: 'Usuario eliminado exitosamente' })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error al eliminar usuario:', error)
     return NextResponse.json(
       { error: 'Error interno del servidor' },

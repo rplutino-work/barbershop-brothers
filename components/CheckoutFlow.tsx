@@ -124,7 +124,7 @@ export function CheckoutFlow({ barbers, services, onComplete, onBack, preselecte
         })
         setCurrentStep('complete')
         setShowSuccess(true)
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error al procesar pago:', error)
       } finally {
         setIsProcessing(false)

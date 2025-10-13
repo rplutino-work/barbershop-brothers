@@ -46,7 +46,7 @@ export function BarberServiceHistory({ barberId }: BarberServiceHistoryProps) {
         const data = await response.json()
         setPayments(data)
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al obtener pagos:', error)
     } finally {
       setLoading(false)
@@ -76,7 +76,7 @@ export function BarberServiceHistory({ barberId }: BarberServiceHistoryProps) {
         setShowEditModal(false)
         setEditingPayment(null)
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al actualizar pago:', error)
     }
   }
@@ -249,7 +249,7 @@ function EditServiceModal({
         const clientsData = await clientsRes.json()
         setClients(clientsData)
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al cargar datos:', error)
     } finally {
       setLoading(false)

@@ -10,7 +10,7 @@ export async function GET() {
     })
 
     return NextResponse.json(clients)
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error al obtener clientes:', error)
     return NextResponse.json(
       { error: 'Error interno del servidor' },

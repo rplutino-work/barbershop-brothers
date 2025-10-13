@@ -45,7 +45,7 @@ export default function RegisterServicePage() {
         const data = await response.json()
         setBarbers(data)
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al cargar barberos:', error)
     }
   }
@@ -57,7 +57,7 @@ export default function RegisterServicePage() {
         const data = await response.json()
         setServices(data)
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al cargar servicios:', error)
     }
   }
@@ -88,7 +88,7 @@ export default function RegisterServicePage() {
         // Redirigir al dashboard del barbero
         router.push('/barber')
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al registrar el servicio:', error)
     }
   }

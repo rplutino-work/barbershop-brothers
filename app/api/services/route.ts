@@ -13,7 +13,7 @@ export async function GET() {
     })
 
     return NextResponse.json(services)
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error al obtener servicios:', error)
     return NextResponse.json(
       { error: 'Error interno del servidor' },
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     })
 
     return NextResponse.json(service, { status: 201 })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error al crear servicio:', error)
     return NextResponse.json(
       { error: 'Error interno del servidor' },

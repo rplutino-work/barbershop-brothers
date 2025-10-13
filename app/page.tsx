@@ -49,7 +49,7 @@ export default function HomePage() {
         const barbersData = users.filter((user: any) => user.role === 'BARBER')
         setAllBarbers(barbersData)
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al cargar barberos:', error)
       // Fallback con datos de ejemplo
       setAllBarbers([
@@ -68,7 +68,7 @@ export default function HomePage() {
         const data = await response.json()
         setServices(data)
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al cargar servicios:', error)
       // Fallback con datos de ejemplo
       setServices([
@@ -127,7 +127,7 @@ export default function HomePage() {
       } else {
         throw new Error('Error al registrar el pago')
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al registrar el pago:', error)
     }
   }

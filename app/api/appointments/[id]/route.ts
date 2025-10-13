@@ -40,7 +40,7 @@ export async function PUT(
     })
 
     return NextResponse.json(appointment)
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error al actualizar cita:', error)
     return NextResponse.json(
       { error: 'Error interno del servidor' },
@@ -59,7 +59,7 @@ export async function DELETE(
     })
 
     return NextResponse.json({ message: 'Cita eliminada exitosamente' })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error al eliminar cita:', error)
     return NextResponse.json(
       { error: 'Error interno del servidor' },

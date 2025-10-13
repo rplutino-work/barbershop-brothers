@@ -36,7 +36,7 @@ export function MainInterface({ onStartRegistration }: MainInterfaceProps) {
         const barbersData = users.filter((user: any) => user.role === 'BARBER')
         setBarbers(barbersData)
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al cargar barberos:', error)
     } finally {
       setLoading(false)
@@ -69,7 +69,7 @@ export function MainInterface({ onStartRegistration }: MainInterfaceProps) {
         setSelectedBarberStats({ ...stats, barber })
         setShowStatsModal(true)
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al obtener estadísticas:', error)
     } finally {
       setLoadingStats(false)

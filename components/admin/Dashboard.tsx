@@ -48,7 +48,7 @@ export function Dashboard() {
         const data = await response.json()
         setStats(data)
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al obtener estadísticas:', error)
     } finally {
       setLoading(false)

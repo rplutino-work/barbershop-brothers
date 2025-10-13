@@ -38,7 +38,7 @@ export function PaymentHistory() {
         const data = await response.json()
         setPayments(data)
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al obtener pagos:', error)
     } finally {
       setLoading(false)
