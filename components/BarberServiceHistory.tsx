@@ -13,11 +13,13 @@ interface Payment {
     name: string
   }
   service: {
+    id: string
     name: string
     price: number
     duration: number
   }
   client?: {
+    id: string
     name: string
     phone: string
   } | null

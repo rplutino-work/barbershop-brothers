@@ -12,8 +12,8 @@ export async function GET(
       },
       include: {
         barber: { select: { name: true } },
-        service: { select: { name: true, price: true, duration: true } },
-        client: { select: { name: true, phone: true } },
+        service: { select: { id: true, name: true, price: true, duration: true } },
+        client: { select: { id: true, name: true, phone: true } },
       },
       orderBy: {
         createdAt: 'desc',
