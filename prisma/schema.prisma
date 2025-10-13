@@ -6,22 +6,25 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  password  String
-  role      String   @default("BARBER") // ADMIN, BARBER
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id              String   @id @default(cuid())
+  email           String   @unique
+  name            String?
+  password        String
+  role            String   @default("BARBER") // ADMIN, BARBER
+  commissionRate  Float    @default(50) // Porcentaje que se queda el barbero (ej: 50 = 50%)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   // Relations
   payments  Payment[]
   sessions  Session[]
+  schedules BarberSchedule[]
+  appointments Appointment[]
 
   @@map("users")
 }
@@ -38,6 +41,7 @@ model Service {
 
   // Relations
   payments    Payment[]
+  appointments Appointment[]
 
   @@map("services")
 }
@@ -57,29 +61,30 @@ model Client {
 
 model Payment {
   id          String   @id @default(cuid())
-  amount      Float
-  method      String   // CASH, CARD, TRANSFER
-  status      String   @default("COMPLETED") // PENDING, COMPLETED, CANCELLED
   barberId    String
   serviceId   String
   clientId    String?
+  amount      Float
+  method      String   // CASH, CARD, TRANSFER
+  status      String   @default("COMPLETED") // PENDING, COMPLETED, CANCELLED
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   // Relations
-  barber      User        @relation(fields: [barberId], references: [id])
-  service     Service     @relation(fields: [serviceId], references: [id])
-  client      Client?     @relation(fields: [clientId], references: [id])
+  barber  User    @relation(fields: [barberId], references: [id], onDelete: Cascade)
+  service Service @relation(fields: [serviceId], references: [id])
+  client  Client? @relation(fields: [clientId], references: [id])
 
   @@map("payments")
 }
 
 model Session {
   id        String   @id @default(cuid())
+  sessionToken String   @unique
   userId    String
-  token     String   @unique
-  expiresAt DateTime
+  expires   DateTime
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
   user      User     @relation(fields: [userId], references: [id])
@@ -99,4 +104,39 @@ model BarberShop {
   updatedAt   DateTime @updatedAt
 
   @@map("barbershops")
+}
+
+model BarberSchedule {
+  id        String   @id @default(cuid())
+  barberId  String
+  dayOfWeek Int      // 0 = Domingo, 1 = Lunes, ..., 6 = Sábado
+  startTime String   // "09:00"
+  endTime   String   // "18:00"
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  barber User @relation(fields: [barberId], references: [id], onDelete: Cascade)
+
+  @@map("barber_schedules")
+}
+
+model Appointment {
+  id          String   @id @default(cuid())
+  clientName  String
+  clientPhone String
+  barberId    String
+  serviceId   String
+  date        DateTime // Fecha y hora de la cita
+  status      String   @default("PENDING") // PENDING, CONFIRMED, COMPLETED, CANCELLED
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  barber  User    @relation(fields: [barberId], references: [id], onDelete: Cascade)
+  service Service @relation(fields: [serviceId], references: [id])
+
+  @@map("appointments")
 }

@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { DollarSign, Calendar, Clock, TrendingUp, User, LogOut, Scissors, BarChart3, History } from 'lucide-react'
+import { DollarSign, Calendar, Clock, TrendingUp, User, LogOut, Scissors, BarChart3, History, CheckCircle } from 'lucide-react'
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { BarberServiceHistory } from '@/components/BarberServiceHistory'
+import { BarberAppointments } from '@/components/BarberAppointments'
 
 interface BarberStats {
   todayRevenue: number
@@ -15,6 +16,11 @@ interface BarberStats {
   weekServices: number
   monthServices: number
   averageService: number
+  barber?: {
+    id: string
+    name: string
+    commissionRate: number
+  }
   recentServices: Array<{
     id: string
     serviceName: string
@@ -26,7 +32,7 @@ interface BarberStats {
   }>
 }
 
-type BarberTab = 'stats' | 'history'
+type BarberTab = 'stats' | 'appointments' | 'history'
 
 export default function BarberDashboard() {
   const { data: session, status } = useSession()
@@ -80,6 +86,7 @@ export default function BarberDashboard() {
 
   const tabs = [
     { id: 'stats' as BarberTab, label: 'Mi Seguimiento', icon: BarChart3 },
+    { id: 'appointments' as BarberTab, label: 'Mis Turnos', icon: Calendar },
     { id: 'history' as BarberTab, label: 'Mis Servicios', icon: History },
   ]
 
@@ -175,6 +182,9 @@ export default function BarberDashboard() {
           {activeTab === 'history' ? (
             /* Historial de Servicios */
             <BarberServiceHistory barberId={session.user.id} />
+          ) : activeTab === 'appointments' ? (
+            /* Turnos del Barbero */
+            <BarberAppointments barberId={session.user.id} />
           ) : (
             /* Estadísticas y Seguimiento */
             <>
@@ -210,6 +220,47 @@ export default function BarberDashboard() {
               )
             })}
           </div>
+
+              {/* Comisión y ganancias reales */}
+              {stats.barber && (
+                <div className="bg-gradient-to-r from-primary-50 to-primary-100 rounded-xl shadow-sm border border-primary-200 p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                    💰 Tus Ganancias Reales
+                  </h3>
+                  
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-4 bg-white rounded-lg">
+                      <span className="text-sm font-medium text-gray-700">Tu Comisión:</span>
+                      <span className="text-2xl font-bold text-primary-600">
+                        {stats.barber.commissionRate}%
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="bg-white rounded-lg p-4">
+                        <p className="text-xs text-gray-600 mb-1">Ganancia Hoy</p>
+                        <p className="text-lg font-bold text-green-600">
+                          ${Math.round((stats.todayRevenue || 0) * (stats.barber.commissionRate / 100)).toLocaleString()}
+                        </p>
+                      </div>
+                      
+                      <div className="bg-white rounded-lg p-4">
+                        <p className="text-xs text-gray-600 mb-1">Ganancia Semana</p>
+                        <p className="text-lg font-bold text-blue-600">
+                          ${Math.round((stats.weekRevenue || 0) * (stats.barber.commissionRate / 100)).toLocaleString()}
+                        </p>
+                      </div>
+                      
+                      <div className="bg-white rounded-lg p-4">
+                        <p className="text-xs text-gray-600 mb-1">Ganancia Mes</p>
+                        <p className="text-lg font-bold text-purple-600">
+                          ${Math.round((stats.monthRevenue || 0) * (stats.barber.commissionRate / 100)).toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Recent Services */}
               <div className="bg-white rounded-xl shadow-sm border">

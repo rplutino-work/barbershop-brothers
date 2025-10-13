@@ -9,6 +9,7 @@ interface Barber {
   name: string
   email: string
   role: string
+  commissionRate: number
   createdAt: string
 }
 
@@ -21,6 +22,7 @@ export function BarberManagement() {
     name: '',
     email: '',
     password: '',
+    commissionRate: 50,
   })
 
   useEffect(() => {
@@ -59,7 +61,7 @@ export function BarberManagement() {
         await fetchBarbers()
         setShowModal(false)
         setEditingBarber(null)
-        setFormData({ name: '', email: '', password: '' })
+        setFormData({ name: '', email: '', password: '', commissionRate: 50 })
       }
     } catch (error) {
       console.error('Error al guardar barbero:', error)
@@ -72,6 +74,7 @@ export function BarberManagement() {
       name: barber.name,
       email: barber.email,
       password: '',
+      commissionRate: barber.commissionRate || 50,
     })
     setShowModal(true)
   }
@@ -114,7 +117,7 @@ export function BarberManagement() {
         <button
           onClick={() => {
             setEditingBarber(null)
-            setFormData({ name: '', email: '', password: '' })
+            setFormData({ name: '', email: '', password: '', commissionRate: 50 })
             setShowModal(true)
           }}
           className="bg-primary-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-primary-700 transition-colors"
@@ -244,6 +247,28 @@ export function BarberManagement() {
                   required={!editingBarber}
                 />
               </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Comisión (%)
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    value={formData.commissionRate}
+                    onChange={(e) => setFormData({ ...formData, commissionRate: parseFloat(e.target.value) || 0 })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    required
+                  />
+                  <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500">%</span>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Porcentaje que se queda el barbero de cada servicio (ej: 50 = 50%)
+                </p>
+              </div>
               
               <div className="flex justify-end space-x-3 pt-4">
                 <button
@@ -267,3 +292,4 @@ export function BarberManagement() {
     </div>
   )
 }
+

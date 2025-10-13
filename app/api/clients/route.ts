@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     })
 
     return NextResponse.json(client, { status: 201 })
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error al crear cliente:', error)
     if (error.code === 'P2002') {
       return NextResponse.json(

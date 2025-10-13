@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
-import { Menu, X, Scissors, Calendar } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Menu, X, Scissors, Calendar, BarChart3, DollarSign, TrendingUp, Clock } from 'lucide-react'
 import { BarberSelector } from './BarberSelector'
 import { DailyServices } from './DailyServices'
 
@@ -20,6 +20,9 @@ export function MainInterface({ onStartRegistration }: MainInterfaceProps) {
   const [loading, setLoading] = useState(true)
   const [showMenu, setShowMenu] = useState(false)
   const [showDailyServices, setShowDailyServices] = useState(false)
+  const [showStatsModal, setShowStatsModal] = useState(false)
+  const [selectedBarberStats, setSelectedBarberStats] = useState<any>(null)
+  const [loadingStats, setLoadingStats] = useState(false)
 
   useEffect(() => {
     fetchBarbers()
@@ -55,6 +58,22 @@ export function MainInterface({ onStartRegistration }: MainInterfaceProps) {
 
   const handleBackToMain = () => {
     setShowDailyServices(false)
+  }
+
+  const fetchBarberStats = async (barber: Barber) => {
+    setLoadingStats(true)
+    try {
+      const response = await fetch(`/api/stats/barber/${barber.id}`)
+      if (response.ok) {
+        const stats = await response.json()
+        setSelectedBarberStats({ ...stats, barber })
+        setShowStatsModal(true)
+      }
+    } catch (error) {
+      console.error('Error al obtener estadísticas:', error)
+    } finally {
+      setLoadingStats(false)
+    }
   }
 
   if (loading) {
@@ -152,24 +171,37 @@ export function MainInterface({ onStartRegistration }: MainInterfaceProps) {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-4xl w-full mb-8 mt-8">
           {barbers.map((barber, index) => (
-            <motion.button
+            <motion.div
               key={barber.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => handleBarberSelect(barber)}
-              className="bg-gradient-to-br from-primary-500 to-primary-600 text-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 group"
+              className="relative bg-gradient-to-br from-primary-500 to-primary-600 text-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 group"
             >
-              <div className="text-center">
+              {/* Botón de estadísticas */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  fetchBarberStats(barber)
+                }}
+                className="absolute top-3 right-3 w-8 h-8 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-full flex items-center justify-center transition-all duration-200 group/stats"
+                title="Ver estadísticas"
+              >
+                <BarChart3 className="w-4 h-4" />
+              </button>
+
+              {/* Contenido principal */}
+              <button
+                onClick={() => handleBarberSelect(barber)}
+                className="w-full text-center"
+              >
                 <div className="w-20 h-20 bg-white bg-opacity-20 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-opacity-30 transition-all">
                   <Scissors className="w-10 h-10" />
                 </div>
                 <h3 className="text-2xl font-bold mb-2">{barber.name}</h3>
                 <p className="text-primary-100">Toca para registrar servicio</p>
-              </div>
-            </motion.button>
+              </button>
+            </motion.div>
           ))}
         </div>
 
@@ -185,6 +217,165 @@ export function MainInterface({ onStartRegistration }: MainInterfaceProps) {
           </p>
         </motion.div>
       </div>
+
+      {/* Modal de Estadísticas */}
+      <AnimatePresence>
+        {showStatsModal && selectedBarberStats && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+            onClick={() => setShowStatsModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              className="bg-white rounded-2xl p-6 w-full max-w-md mx-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header del modal */}
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">
+                    Estadísticas de {selectedBarberStats.barber.name}
+                  </h3>
+                  <p className="text-sm text-gray-600">Resumen de rendimiento</p>
+                </div>
+                <button
+                  onClick={() => setShowStatsModal(false)}
+                  className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {loadingStats ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-4"></div>
+                  <p className="text-gray-600">Cargando estadísticas...</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {/* Estadísticas del día */}
+                  <div className="bg-green-50 rounded-xl p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
+                          <DollarSign className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-600">Hoy</p>
+                          <p className="text-lg font-bold text-gray-900">
+                            ${selectedBarberStats.todayRevenue?.toLocaleString() || 0}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm text-gray-600">{selectedBarberStats.todayServices || 0} servicios</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Estadísticas de la semana */}
+                  <div className="bg-blue-50 rounded-xl p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
+                          <TrendingUp className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-600">Esta Semana</p>
+                          <p className="text-lg font-bold text-gray-900">
+                            ${selectedBarberStats.weekRevenue?.toLocaleString() || 0}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm text-gray-600">{selectedBarberStats.weekServices || 0} servicios</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Estadísticas del mes */}
+                  <div className="bg-purple-50 rounded-xl p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center">
+                          <Calendar className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-600">Este Mes</p>
+                          <p className="text-lg font-bold text-gray-900">
+                            ${selectedBarberStats.monthRevenue?.toLocaleString() || 0}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm text-gray-600">{selectedBarberStats.monthServices || 0} servicios</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Promedio por servicio */}
+                  <div className="bg-yellow-50 rounded-xl p-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-yellow-500 rounded-lg flex items-center justify-center">
+                        <Clock className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-600">Promedio por Servicio</p>
+                        <p className="text-lg font-bold text-gray-900">
+                          ${selectedBarberStats.averageService?.toLocaleString() || 0}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Comisión y ganancias reales */}
+                  <div className="mt-6 pt-6 border-t border-gray-200">
+                    <div className="bg-gradient-to-r from-primary-50 to-primary-100 rounded-xl p-4">
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-gray-700">Comisión del Barbero:</span>
+                          <span className="text-lg font-bold text-primary-700">
+                            {selectedBarberStats.barber?.commissionRate || 50}%
+                          </span>
+                        </div>
+                        
+                        <div className="h-px bg-primary-200"></div>
+                        
+                        <div>
+                          <p className="text-xs text-gray-600 mb-2">Tu ganancia real del mes:</p>
+                          <p className="text-2xl font-bold text-primary-600">
+                            ${Math.round((selectedBarberStats.monthRevenue || 0) * ((selectedBarberStats.barber?.commissionRate || 50) / 100)).toLocaleString()}
+                          </p>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-3 pt-2">
+                          <div>
+                            <p className="text-xs text-gray-600">Ganancia Hoy:</p>
+                            <p className="text-sm font-semibold text-gray-900">
+                              ${Math.round((selectedBarberStats.todayRevenue || 0) * ((selectedBarberStats.barber?.commissionRate || 50) / 100)).toLocaleString()}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-600">Ganancia Semana:</p>
+                            <p className="text-sm font-semibold text-gray-900">
+                              ${Math.round((selectedBarberStats.weekRevenue || 0) * ((selectedBarberStats.barber?.commissionRate || 50) / 100)).toLocaleString()}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

@@ -95,6 +95,12 @@ export async function GET(
       }
     })
 
+    // Obtener datos del barbero incluyendo comisión
+    const barber = await prisma.user.findUnique({
+      where: { id: params.id },
+      select: { id: true, name: true, commissionRate: true }
+    })
+
     return NextResponse.json({
       todayRevenue: todayRevenue._sum.amount || 0,
       weekRevenue: weekRevenue._sum.amount || 0,
@@ -103,6 +109,7 @@ export async function GET(
       weekServices,
       monthServices,
       averageService: averageStats._avg.amount || 0,
+      barber: barber,
       recentServices: recentServices.map(payment => ({
         id: payment.id,
         serviceName: payment.service.name,

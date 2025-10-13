@@ -2,16 +2,17 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Users, Scissors, CreditCard, BarChart3, Settings, LogOut, UserCheck } from 'lucide-react'
+import { Users, Scissors, CreditCard, BarChart3, Settings, LogOut, UserCheck, Clock } from 'lucide-react'
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { BarberManagement } from '@/components/admin/BarberManagement'
 import { ServiceManagement } from '@/components/admin/ServiceManagement'
 import { PaymentHistory } from '@/components/admin/PaymentHistory'
 import { ClientManagement } from '@/components/admin/ClientManagement'
+import { ScheduleManagement } from '@/components/admin/ScheduleManagement'
 import { Dashboard } from '@/components/admin/Dashboard'
 
-type AdminTab = 'dashboard' | 'barbers' | 'services' | 'clients' | 'payments' | 'settings'
+type AdminTab = 'dashboard' | 'barbers' | 'services' | 'clients' | 'payments' | 'schedules' | 'settings'
 
 export default function AdminPage() {
   const { data: session, status } = useSession()
@@ -42,6 +43,7 @@ export default function AdminPage() {
     { id: 'barbers' as AdminTab, label: 'Barberos', icon: Users },
     { id: 'services' as AdminTab, label: 'Servicios', icon: Scissors },
     { id: 'clients' as AdminTab, label: 'Clientes', icon: UserCheck },
+    { id: 'schedules' as AdminTab, label: 'Horarios', icon: Clock },
     { id: 'payments' as AdminTab, label: 'Pagos', icon: CreditCard },
     { id: 'settings' as AdminTab, label: 'Configuración', icon: Settings },
   ]
@@ -56,6 +58,8 @@ export default function AdminPage() {
         return <ServiceManagement />
       case 'clients':
         return <ClientManagement />
+      case 'schedules':
+        return <ScheduleManagement />
       case 'payments':
         return <PaymentHistory />
       case 'settings':
