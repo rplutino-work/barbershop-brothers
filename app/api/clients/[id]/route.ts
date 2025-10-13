@@ -29,7 +29,7 @@ export async function PUT(
     })
 
     return NextResponse.json(client)
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error al actualizar cliente:', error)
     if (error.code === 'P2002') {
       return NextResponse.json(

@@ -29,5 +29,3 @@ export async function GET(
     )
   }
 }
-import { prisma } from '@/lib/prisma'
-
