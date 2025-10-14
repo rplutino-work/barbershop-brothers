@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation'
 import { ScreenSaver } from '@/components/ScreenSaver'
 import { CheckoutFlow } from '@/components/CheckoutFlow'
 import { MainInterface } from '@/components/MainInterface'
+import { InactivityDetector } from '@/components/InactivityDetector'
 
 interface Barber {
   id: string
@@ -134,6 +135,14 @@ export default function HomePage() {
 
   return (
     <div className="h-screen w-screen overflow-hidden bg-gray-100">
+      {/* Detector de inactividad - solo cuando NO está el screensaver */}
+      {!showScreenSaver && (
+        <InactivityDetector 
+          onInactive={handleBackToScreenSaver} 
+          timeoutMinutes={3}
+        />
+      )}
+      
       <AnimatePresence>
         {showScreenSaver ? (
           <ScreenSaver key="screensaver" onActivate={handleActivateScreen} />
