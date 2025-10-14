@@ -36,10 +36,14 @@ export function FullscreenManager() {
     document.addEventListener('touchstart', handleInteraction, { once: true })
 
     // Forzar orientación landscape en Android
-    if (screen.orientation && screen.orientation.lock) {
-      screen.orientation.lock('any').catch(() => {
-        console.log('No se pudo bloquear la orientación')
-      })
+    try {
+      if (screen.orientation && (screen.orientation as any).lock) {
+        (screen.orientation as any).lock('any').catch(() => {
+          console.log('No se pudo bloquear la orientación')
+        })
+      }
+    } catch (err) {
+      // La API de orientación no está disponible en todos los navegadores
     }
 
     return () => {
