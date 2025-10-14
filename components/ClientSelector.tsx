@@ -166,7 +166,7 @@ export function ClientSelector({
       initial={{ opacity: 0, x: 300 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -300 }}
-      className="absolute inset-0 bg-white p-4 md:p-8 flex flex-col overflow-x-hidden"
+      className="absolute inset-0 bg-white p-4 tablet:p-6 md:p-8 flex flex-col overflow-hidden"
     >
       <div className="flex items-center mb-4 md:mb-8 flex-shrink-0">
         <button
@@ -230,14 +230,14 @@ export function ClientSelector({
             </button>
           </div>
 
-          {/* Lista de clientes */}
-          <div className="flex-1 overflow-y-auto overflow-x-hidden">
-            <div className="space-y-3 pb-4">
+          {/* Lista de clientes - Asegurar que sea scrolleable */}
+          <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0" style={{ maxHeight: 'calc(100vh - 400px)' }}>
+            <div className="space-y-3 pb-4 pr-2">
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => onSelectClient(null)}
-                className="w-full bg-gray-100 border-2 border-gray-300 rounded-xl md:rounded-2xl p-3 md:p-4 flex items-center justify-between hover:bg-gray-200 transition-colors"
+                className="w-full bg-gray-100 border-2 border-gray-300 rounded-xl md:rounded-2xl p-4 tablet:p-5 flex items-center justify-between hover:bg-gray-200 transition-colors touch-target"
               >
                 <div className="flex items-center">
                   <div className="w-10 h-10 md:w-12 md:h-12 bg-gray-300 rounded-lg md:rounded-xl flex items-center justify-center mr-3 md:mr-4">
@@ -258,7 +258,7 @@ export function ClientSelector({
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => onSelectClient(client)}
-                    className="w-full bg-gradient-to-r from-secondary-50 to-secondary-100 border-2 border-secondary-200 rounded-xl md:rounded-2xl p-3 md:p-4 flex items-center justify-between hover:shadow-md transition-all duration-200"
+                    className="w-full bg-gradient-to-r from-secondary-50 to-secondary-100 border-2 border-secondary-200 rounded-xl md:rounded-2xl p-4 tablet:p-5 flex items-center justify-between hover:shadow-md transition-all duration-200 touch-target"
                   >
                     <div className="flex items-center">
                       <div className="w-10 h-10 md:w-12 md:h-12 bg-primary-100 rounded-lg md:rounded-xl flex items-center justify-center mr-3 md:mr-4">
