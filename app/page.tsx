@@ -103,6 +103,7 @@ export default function HomePage() {
     service: Service
     client: any
     paymentMethod: string
+    tip?: number
   }) => {
     try {
       console.log('Servicio completado:', data)
@@ -116,6 +117,7 @@ export default function HomePage() {
           barberId: data.barber.id,
           serviceId: data.service.id,
           amount: data.service.price,
+          tip: data.tip || 0,
           method: data.paymentMethod,
           clientId: data.client?.id || null,
         }),

@@ -25,6 +25,8 @@ model User {
   sessions  Session[]
   schedules BarberSchedule[]
   appointments Appointment[]
+  weeklyClosings WeeklyClosing[]
+  activeService ActiveService? // Un barbero puede tener un servicio activo
 
   @@map("users")
 }
@@ -65,6 +67,7 @@ model Payment {
   serviceId   String
   clientId    String?
   amount      Float
+  tip         Float    @default(0) // Propina (solo para transferencias)
   method      String   // CASH, CARD, TRANSFER
   status      String   @default("COMPLETED") // PENDING, COMPLETED, CANCELLED
   createdAt   DateTime @default(now())
@@ -76,6 +79,39 @@ model Payment {
   client  Client? @relation(fields: [clientId], references: [id])
 
   @@map("payments")
+}
+
+model WeeklyClosing {
+  id          String   @id @default(cuid())
+  weekStart   DateTime // Inicio de la semana
+  weekEnd     DateTime // Fin de la semana
+  barberId    String
+  totalServices Int    // Total de servicios
+  totalRevenue Float   // Ingresos totales
+  totalTips   Float    @default(0) // Total de propinas
+  commission  Float    // Comisión a pagar
+  status      String   @default("PENDING") // PENDING, PAID
+  paidAt      DateTime? // Fecha de pago
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  barber User @relation(fields: [barberId], references: [id], onDelete: Cascade)
+
+  @@map("weekly_closings")
+}
+
+model ActiveService {
+  id          String   @id @default(cuid())
+  barberId    String   @unique // Solo puede tener un servicio activo a la vez
+  startTime   DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  barber User @relation(fields: [barberId], references: [id], onDelete: Cascade)
+
+  @@map("active_services")
 }
 
 model Session {

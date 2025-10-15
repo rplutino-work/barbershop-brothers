@@ -2,15 +2,22 @@
 
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Menu, X, Scissors, Calendar, BarChart3, DollarSign, TrendingUp, Clock } from 'lucide-react'
+import { Menu, X, Scissors, Calendar, BarChart3, DollarSign, TrendingUp, Clock, Play, StopCircle } from 'lucide-react'
 import { LoadingSpinner } from './ui/LoadingSpinner'
 import { BarberSelector } from './BarberSelector'
 import { DailyServices } from './DailyServices'
 import { DailyAppointments } from './DailyAppointments'
+import { ServiceTimer } from './ServiceTimer'
 
 interface Barber {
   id: string
   name: string
+}
+
+interface ActiveService {
+  id: string
+  barberId: string
+  startTime: string
 }
 
 interface MainInterfaceProps {
@@ -26,9 +33,20 @@ export function MainInterface({ onStartRegistration }: MainInterfaceProps) {
   const [showStatsModal, setShowStatsModal] = useState(false)
   const [selectedBarberStats, setSelectedBarberStats] = useState<any>(null)
   const [loadingStats, setLoadingStats] = useState(false)
+  const [activeServices, setActiveServices] = useState<ActiveService[]>([])
+  const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const [selectedBarber, setSelectedBarber] = useState<Barber | null>(null)
 
   useEffect(() => {
     fetchBarbers()
+    fetchActiveServices()
+    
+    // Actualizar servicios activos cada 5 segundos
+    const interval = setInterval(() => {
+      fetchActiveServices()
+    }, 5000)
+    
+    return () => clearInterval(interval)
   }, [])
 
   const fetchBarbers = async () => {
@@ -46,8 +64,71 @@ export function MainInterface({ onStartRegistration }: MainInterfaceProps) {
     }
   }
 
+  const fetchActiveServices = async () => {
+    try {
+      const response = await fetch('/api/active-service')
+      if (response.ok) {
+        const services = await response.json()
+        setActiveServices(services)
+      }
+    } catch (error: any) {
+      console.error('Error al cargar servicios activos:', error)
+    }
+  }
+
   const handleBarberSelect = (barber: Barber) => {
-    onStartRegistration(barber)
+    // Verificar si el barbero tiene un servicio activo
+    const hasActiveService = activeServices.some(s => s.barberId === barber.id)
+    
+    if (hasActiveService) {
+      // Si tiene servicio activo, finalizar y continuar con el registro
+      handleFinishService(barber)
+    } else {
+      // Si no tiene servicio activo, mostrar modal de confirmación
+      setSelectedBarber(barber)
+      setShowConfirmModal(true)
+    }
+  }
+
+  const handleStartService = async () => {
+    if (!selectedBarber) return
+
+    try {
+      const response = await fetch('/api/active-service', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ barberId: selectedBarber.id }),
+      })
+
+      if (response.ok) {
+        await fetchActiveServices()
+        setShowConfirmModal(false)
+        setSelectedBarber(null)
+      }
+    } catch (error: any) {
+      console.error('Error al iniciar servicio:', error)
+    }
+  }
+
+  const handleFinishService = async (barber: Barber) => {
+    try {
+      const response = await fetch(`/api/active-service?barberId=${barber.id}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        await fetchActiveServices()
+        // Continuar con el flujo de registro
+        onStartRegistration(barber)
+      }
+    } catch (error: any) {
+      console.error('Error al finalizar servicio:', error)
+    }
+  }
+
+  const handleCancelStart = () => {
+    setShowConfirmModal(false)
+    setSelectedBarber(null)
   }
 
   const toggleMenu = () => {
@@ -201,55 +282,71 @@ export function MainInterface({ onStartRegistration }: MainInterfaceProps) {
       {/* Contenido Principal - Botones de Barberos */}
       <div className="h-full flex flex-col items-center justify-center px-2 tablet:px-4 landscape:px-2">
         <div className={`grid ${getGridCols()} gap-1 tablet:gap-2 landscape:gap-1 w-full h-full items-stretch justify-items-stretch`}>
-          {barbers.map((barber, index) => (
-            <motion.div
-              key={barber.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-              className="relative bg-gradient-to-br from-primary-500 to-primary-600 text-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 group flex items-center justify-center w-full h-full min-h-[200px] tablet:min-h-[250px] landscape:min-h-[180px]"
-            >
-              {/* Botón de estadísticas */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  fetchBarberStats(barber)
-                }}
-                className="absolute top-2 right-2 w-6 h-6 md:w-8 md:h-8 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-full flex items-center justify-center transition-all duration-200 group/stats"
-                title="Ver estadísticas"
+          {barbers.map((barber, index) => {
+            const activeService = activeServices.find(s => s.barberId === barber.id)
+            const isActive = !!activeService
+            
+            return (
+              <motion.div
+                key={barber.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className={`relative text-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 group flex items-center justify-center w-full h-full min-h-[200px] tablet:min-h-[250px] landscape:min-h-[180px] ${
+                  isActive 
+                    ? 'bg-gradient-to-br from-green-500 to-green-600' 
+                    : 'bg-gradient-to-br from-primary-500 to-primary-600'
+                }`}
               >
-                <BarChart3 className="w-3 h-3 md:w-4 md:h-4" />
-              </button>
+                {/* Botón de estadísticas */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    fetchBarberStats(barber)
+                  }}
+                  className="absolute top-2 right-2 w-6 h-6 md:w-8 md:h-8 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-full flex items-center justify-center transition-all duration-200 group/stats"
+                  title="Ver estadísticas"
+                >
+                  <BarChart3 className="w-3 h-3 md:w-4 md:h-4" />
+                </button>
 
-              {/* Contenido principal */}
-              <button
-                onClick={() => handleBarberSelect(barber)}
-                className="w-full text-center"
-              >
-                <div className="flex flex-col items-center justify-center w-full h-full p-4 tablet:p-6 landscape:p-4">
-                  <div className="w-12 h-12 md:w-16 md:h-16 lg:w-20 lg:h-20 bg-white bg-opacity-20 rounded-full flex items-center justify-center mb-3 md:mb-4 group-hover:bg-opacity-30 transition-all">
-                    <Scissors className="w-6 h-6 md:w-8 md:h-8 lg:w-10 lg:h-10" />
+                {/* Indicador de estado */}
+                {isActive && (
+                  <div className="absolute top-2 left-2 flex items-center gap-1">
+                    <div className="w-2 h-2 md:w-3 md:h-3 bg-white rounded-full animate-pulse"></div>
+                    <span className="text-xs md:text-sm font-medium">En servicio</span>
                   </div>
-                  <h3 className="text-base md:text-lg lg:text-xl font-bold leading-tight text-center px-2 break-words w-full">
-                    {barber.name}
-                  </h3>
-                </div>
-              </button>
-            </motion.div>
-          ))}
-        </div>
+                )}
 
-        {/* Información adicional */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
-          className="mt-12 text-center"
-        >
-          <p className="text-gray-500 text-sm">
-            Usa el menú hamburguesa para ver los servicios del día
-          </p>
-        </motion.div>
+                {/* Contenido principal */}
+                <button
+                  onClick={() => handleBarberSelect(barber)}
+                  className="w-full text-center"
+                >
+                  <div className="flex flex-col items-center justify-center w-full h-full p-4 tablet:p-6 landscape:p-4">
+                    <div className="w-12 h-12 md:w-16 md:h-16 lg:w-20 lg:h-20 bg-white bg-opacity-20 rounded-full flex items-center justify-center mb-3 md:mb-4 group-hover:bg-opacity-30 transition-all">
+                      {isActive ? (
+                        <StopCircle className="w-6 h-6 md:w-8 md:h-8 lg:w-10 lg:h-10" />
+                      ) : (
+                        <Scissors className="w-6 h-6 md:w-8 md:h-8 lg:w-10 lg:h-10" />
+                      )}
+                    </div>
+                    <h3 className="text-xl md:text-2xl lg:text-3xl font-bold leading-tight text-center px-2 break-words w-full mb-2">
+                      {barber.name}
+                    </h3>
+                    
+                    {/* Cronómetro */}
+                    {isActive && activeService && (
+                      <div className="mt-2">
+                        <ServiceTimer startTime={activeService.startTime} size="lg" />
+                      </div>
+                    )}
+                  </div>
+                </button>
+              </motion.div>
+            )
+          })}
+        </div>
       </div>
 
       {/* Modal de Estadísticas */}
@@ -408,6 +505,59 @@ export function MainInterface({ onStartRegistration }: MainInterfaceProps) {
                   </div>
                 </div>
               )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Modal de confirmación para iniciar servicio */}
+      <AnimatePresence>
+        {showConfirmModal && selectedBarber && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+            onClick={handleCancelStart}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-2xl p-6 md:p-8 w-full max-w-md"
+            >
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Play className="w-8 h-8 text-primary-600" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                  Iniciar Servicio
+                </h3>
+                <p className="text-gray-600">
+                  ¿Deseas iniciar un servicio con{' '}
+                  <span className="font-semibold text-primary-600">
+                    {selectedBarber.name}
+                  </span>
+                  ?
+                </p>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={handleCancelStart}
+                  className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-xl font-semibold hover:bg-gray-300 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleStartService}
+                  className="flex-1 px-6 py-3 bg-primary-600 text-white rounded-xl font-semibold hover:bg-primary-700 transition-colors flex items-center justify-center gap-2"
+                >
+                  <Play className="w-5 h-5" />
+                  Iniciar
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}

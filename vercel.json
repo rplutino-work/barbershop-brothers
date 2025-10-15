@@ -1,5 +1,8 @@
 {
-  "buildCommand": "prisma generate && next build",
-  "installCommand": "npm install"
+  "crons": [
+    {
+      "path": "/api/weekly-closing/auto",
+      "schedule": "59 23 * * 0"
+    }
+  ]
 }
-

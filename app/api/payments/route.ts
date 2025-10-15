@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma'
 
 export async function POST(request: NextRequest) {
   try {
-    const { barberId, serviceId, amount, method, clientId } = await request.json()
+    const { barberId, serviceId, amount, tip, method, clientId } = await request.json()
 
     if (!barberId || !serviceId || !amount || !method) {
       return NextResponse.json(
@@ -17,6 +17,7 @@ export async function POST(request: NextRequest) {
         barberId,
         serviceId,
         amount: parseFloat(amount),
+        tip: parseFloat(tip) || 0,
         method: method.toUpperCase(),
         status: 'COMPLETED',
         clientId: clientId || null,
@@ -42,11 +43,20 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const date = searchParams.get('date')
+    const startDate = searchParams.get('startDate')
+    const endDate = searchParams.get('endDate')
 
     let whereClause: any = {}
 
+    // Si se especifica un rango de fechas
+    if (startDate && endDate) {
+      whereClause.createdAt = {
+        gte: new Date(startDate),
+        lte: new Date(endDate)
+      }
+    }
     // Si se especifica una fecha, filtrar por ese día
-    if (date) {
+    else if (date) {
       const filterDate = new Date(date)
       const startOfDay = new Date(filterDate.getFullYear(), filterDate.getMonth(), filterDate.getDate())
       const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000)

@@ -12,8 +12,9 @@ import { ClientManagement } from '@/components/admin/ClientManagement'
 import { ScheduleManagement } from '@/components/admin/ScheduleManagement'
 import { Dashboard } from '@/components/admin/Dashboard'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
+import { WeeklyClosing } from '@/components/admin/WeeklyClosing'
 
-type AdminTab = 'dashboard' | 'barbers' | 'services' | 'clients' | 'payments' | 'schedules' | 'settings'
+type AdminTab = 'dashboard' | 'barbers' | 'services' | 'clients' | 'payments' | 'schedules' | 'weekly-closing' | 'settings'
 
 export default function AdminPage() {
   const { data: session, status } = useSession()
@@ -47,6 +48,7 @@ export default function AdminPage() {
     { id: 'services' as AdminTab, label: 'Servicios', icon: Scissors },
     { id: 'clients' as AdminTab, label: 'Clientes', icon: UserCheck },
     { id: 'schedules' as AdminTab, label: 'Horarios', icon: Clock },
+    { id: 'weekly-closing' as AdminTab, label: 'Cierre Semanal', icon: CreditCard },
     { id: 'payments' as AdminTab, label: 'Pagos', icon: CreditCard },
     { id: 'settings' as AdminTab, label: 'Configuración', icon: Settings },
   ]
@@ -63,6 +65,8 @@ export default function AdminPage() {
         return <ClientManagement />
       case 'schedules':
         return <ScheduleManagement />
+      case 'weekly-closing':
+        return <WeeklyClosing />
       case 'payments':
         return <PaymentHistory />
       case 'settings':

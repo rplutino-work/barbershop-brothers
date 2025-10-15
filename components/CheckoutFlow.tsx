@@ -35,6 +35,7 @@ interface CheckoutFlowProps {
     service: Service
     client: Client | null
     paymentMethod: string
+    tip?: number
   }) => void
   onBack?: () => void
   preselectedBarber?: Barber | null
@@ -111,7 +112,7 @@ export function CheckoutFlow({ barbers, services, onComplete, onBack, preselecte
     setCurrentStep('payment')
   }
 
-  const handlePaymentSelect = async (method: string) => {
+  const handlePaymentSelect = async (method: string, tip?: number) => {
     setSelectedPaymentMethod(method)
     setIsProcessing(true)
     
@@ -121,7 +122,8 @@ export function CheckoutFlow({ barbers, services, onComplete, onBack, preselecte
           barber: selectedBarber,
           service: selectedService,
           client: selectedClient,
-          paymentMethod: method
+          paymentMethod: method,
+          tip: tip || 0
         })
         setCurrentStep('complete')
         setShowSuccess(true)
