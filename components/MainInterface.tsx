@@ -6,6 +6,7 @@ import { Menu, X, Scissors, Calendar, BarChart3, DollarSign, TrendingUp, Clock }
 import { LoadingSpinner } from './ui/LoadingSpinner'
 import { BarberSelector } from './BarberSelector'
 import { DailyServices } from './DailyServices'
+import { DailyAppointments } from './DailyAppointments'
 
 interface Barber {
   id: string
@@ -21,6 +22,7 @@ export function MainInterface({ onStartRegistration }: MainInterfaceProps) {
   const [loading, setLoading] = useState(true)
   const [showMenu, setShowMenu] = useState(false)
   const [showDailyServices, setShowDailyServices] = useState(false)
+  const [showDailyAppointments, setShowDailyAppointments] = useState(false)
   const [showStatsModal, setShowStatsModal] = useState(false)
   const [selectedBarberStats, setSelectedBarberStats] = useState<any>(null)
   const [loadingStats, setLoadingStats] = useState(false)
@@ -57,8 +59,14 @@ export function MainInterface({ onStartRegistration }: MainInterfaceProps) {
     setShowMenu(false)
   }
 
+  const handleDailyAppointments = () => {
+    setShowDailyAppointments(true)
+    setShowMenu(false)
+  }
+
   const handleBackToMain = () => {
     setShowDailyServices(false)
+    setShowDailyAppointments(false)
   }
 
   const fetchBarberStats = async (barber: Barber) => {
@@ -113,6 +121,14 @@ export function MainInterface({ onStartRegistration }: MainInterfaceProps) {
     )
   }
 
+  if (showDailyAppointments) {
+    return (
+      <div className="h-full w-full bg-gray-100 overflow-y-auto">
+        <DailyAppointments onBack={handleBackToMain} />
+      </div>
+    )
+  }
+
   return (
     <div className="h-full w-full bg-gray-100 relative">
       {/* Menú Hamburguesa */}
@@ -148,6 +164,16 @@ export function MainInterface({ onStartRegistration }: MainInterfaceProps) {
                 <Calendar className="w-6 h-6 text-primary-600" />
                 <span className="text-lg font-semibold text-gray-900">
                   Servicios de Hoy
+                </span>
+              </button>
+
+              <button
+                onClick={handleDailyAppointments}
+                className="w-full flex items-center space-x-4 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
+              >
+                <Clock className="w-6 h-6 text-primary-600" />
+                <span className="text-lg font-semibold text-gray-900">
+                  Turnos del Día
                 </span>
               </button>
               
@@ -240,16 +266,16 @@ export function MainInterface({ onStartRegistration }: MainInterfaceProps) {
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.8, opacity: 0 }}
-              className="bg-white rounded-2xl p-6 tablet:p-8 w-full max-w-md tablet:max-w-2xl mx-4"
+              className="bg-white rounded-2xl p-4 tablet:p-6 landscape:p-4 w-full max-w-md tablet:max-w-xl landscape:max-w-lg mx-4 max-h-[90vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header del modal */}
-              <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center justify-between mb-4 landscape:mb-3">
                 <div>
-                  <h3 className="text-xl font-bold text-gray-900">
+                  <h3 className="text-lg landscape:text-xl font-bold text-gray-900">
                     Estadísticas de {selectedBarberStats.barber.name}
                   </h3>
-                  <p className="text-sm text-gray-600">Resumen de rendimiento</p>
+                  <p className="text-xs landscape:text-sm text-gray-600">Resumen de rendimiento</p>
                 </div>
                 <button
                   onClick={() => setShowStatsModal(false)}

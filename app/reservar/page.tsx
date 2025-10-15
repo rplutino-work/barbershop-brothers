@@ -84,7 +84,12 @@ export default function ReservarPage() {
   }
 
   const checkAvailableBarbers = async (date: string, time: string) => {
-    if (!date || !time || barbers.length === 0) return
+    console.log('🔍 checkAvailableBarbers called with:', { date, time, barbersCount: barbers.length })
+    
+    if (!date || !time || barbers.length === 0) {
+      console.log('❌ Early return:', { date, time, barbersLength: barbers.length })
+      return
+    }
 
     const selectedDateObj = new Date(date)
     const dayOfWeek = selectedDateObj.getDay()
@@ -92,9 +97,40 @@ export default function ReservarPage() {
     const appointmentTime = new Date(selectedDateObj)
     appointmentTime.setHours(parseInt(hours), parseInt(minutes))
 
-    // Filtrar barberos que trabajan en ese día y horario
+    console.log('📅 Date analysis:', {
+      selectedDateObj,
+      dayOfWeek,
+      appointmentTime,
+      hours,
+      minutes
+    })
+
+    // Obtener citas existentes para esa fecha
+    let existingAppointments: any[] = []
+    try {
+      const appointmentsResponse = await fetch('/api/appointments')
+      if (appointmentsResponse.ok) {
+        const allAppointments = await appointmentsResponse.json()
+        const aptDate = new Date(date + 'T00:00:00')
+        
+        existingAppointments = allAppointments.filter((apt: any) => {
+          const aptDateTime = new Date(apt.date)
+          return aptDateTime.toDateString() === aptDate.toDateString()
+        })
+        console.log('📋 Existing appointments for date:', existingAppointments)
+      }
+    } catch (error) {
+      console.error('Error fetching appointments:', error)
+    }
+
+    // Filtrar barberos que trabajan en ese día y horario Y no tienen citas
     const available = barbers.filter(barber => {
+      console.log(`👨‍💼 Checking barber: ${barber.name}`)
+      console.log('📋 Barber schedules:', barber.schedules)
+      
       const schedule = barber.schedules.find(s => s.dayOfWeek === dayOfWeek)
+      console.log(`📅 Schedule for day ${dayOfWeek}:`, schedule)
+      
       if (!schedule) return false
 
       const [startHour, startMin] = schedule.startTime.split(':').map(Number)
@@ -106,9 +142,45 @@ export default function ReservarPage() {
       const endTime = new Date(selectedDateObj)
       endTime.setHours(endHour, endMin)
 
-      return appointmentTime >= startTime && appointmentTime < endTime
+      const isInSchedule = appointmentTime >= startTime && appointmentTime < endTime
+      console.log(`⏰ Schedule check for ${barber.name}:`, {
+        startTime: schedule.startTime,
+        endTime: schedule.endTime,
+        appointmentTime: appointmentTime.toTimeString(),
+        isInSchedule
+      })
+
+      if (!isInSchedule) return false
+
+      // Verificar si el barbero tiene una cita en ese horario
+      const hasConflict = existingAppointments.some(apt => {
+        console.log(`🔍 Checking conflict for ${barber.name}:`, {
+          barberId: barber.id,
+          aptBarberId: apt.barberId,
+          barberIdMatch: apt.barberId === barber.id,
+          appointment: apt
+        })
+        
+        if (apt.barberId !== barber.id) return false
+        
+        const aptDateTime = new Date(apt.date)
+        const aptTime = aptDateTime.toTimeString().substring(0, 5)
+        
+        console.log(`⏰ Time comparison for ${barber.name}:`, {
+          appointmentTime: aptTime,
+          selectedTime: time,
+          timeMatch: aptTime === time
+        })
+        
+        return aptTime === time
+      })
+
+      console.log(`🚫 Conflict check for ${barber.name}:`, hasConflict)
+      
+      return !hasConflict
     })
 
+    console.log('✅ Available barbers:', available.map(b => b.name))
     setAvailableBarbers(available)
   }
 
@@ -124,8 +196,14 @@ export default function ReservarPage() {
       // Solo incluir días laborables (lunes a sábado)
       const dayOfWeek = date.getDay()
       if (dayOfWeek >= 1 && dayOfWeek <= 6) {
+        // Crear fecha en formato YYYY-MM-DD sin problemas de zona horaria
+        const year = date.getFullYear()
+        const month = String(date.getMonth() + 1).padStart(2, '0')
+        const day = String(date.getDate()).padStart(2, '0')
+        const dateString = `${year}-${month}-${day}`
+        
         dates.push({
-          date: date.toISOString().split('T')[0],
+          date: dateString,
           display: date.toLocaleDateString('es-AR', {
             weekday: 'short',
             day: 'numeric',
@@ -134,7 +212,8 @@ export default function ReservarPage() {
           fullDisplay: date.toLocaleDateString('es-AR', {
             weekday: 'long',
             day: 'numeric',
-            month: 'long'
+            month: 'long',
+            year: 'numeric'
           })
         })
       }
@@ -178,12 +257,14 @@ export default function ReservarPage() {
   }
 
   const handleDateChange = (date: string) => {
+    console.log('📅 Date selected:', date)
     setSelectedDate(date)
     setSelectedTime('')
     setAvailableBarbers([])
   }
 
   const handleTimeChange = (time: string) => {
+    console.log('⏰ Time selected:', time)
     setSelectedTime(time)
   }
 
@@ -402,12 +483,15 @@ export default function ReservarPage() {
                 <div className="flex items-center text-primary-700">
                   <Calendar className="w-5 h-5 mr-2" />
                   <span className="font-medium">
-                    {new Date(selectedDate).toLocaleDateString('es-AR', {
-                      weekday: 'long',
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
-                    })}
+                    {(() => {
+                      const dateObj = new Date(selectedDate + 'T00:00:00')
+                      return dateObj.toLocaleDateString('es-AR', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })
+                    })()}
                   </span>
                 </div>
                 <div className="flex items-center text-primary-700">
