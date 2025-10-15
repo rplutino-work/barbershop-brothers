@@ -199,15 +199,15 @@ export function MainInterface({ onStartRegistration }: MainInterfaceProps) {
       )}
 
       {/* Contenido Principal - Botones de Barberos */}
-      <div className="h-full flex flex-col items-center justify-center px-4 tablet:px-8">
-        <div className={`grid ${getGridCols()} gap-2 tablet:gap-4 landscape:gap-3 w-full h-full items-center justify-items-center`}>
+      <div className="h-full flex flex-col items-center justify-center px-2 tablet:px-4 landscape:px-2">
+        <div className={`grid ${getGridCols()} gap-1 tablet:gap-2 landscape:gap-1 w-full h-full items-stretch justify-items-stretch`}>
           {barbers.map((barber, index) => (
             <motion.div
               key={barber.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
-              className="relative bg-gradient-to-br from-primary-500 to-primary-600 text-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 group flex items-center justify-center w-full aspect-square max-w-full"
+              className="relative bg-gradient-to-br from-primary-500 to-primary-600 text-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 group flex items-center justify-center w-full h-full min-h-[200px] tablet:min-h-[250px] landscape:min-h-[180px]"
             >
               {/* Botón de estadísticas */}
               <button
@@ -215,7 +215,7 @@ export function MainInterface({ onStartRegistration }: MainInterfaceProps) {
                   e.stopPropagation()
                   fetchBarberStats(barber)
                 }}
-                className="absolute top-1 right-1 w-5 h-5 md:w-12 md:h-12 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-full flex items-center justify-center transition-all duration-200 group/stats"
+                className="absolute top-2 right-2 w-6 h-6 md:w-8 md:h-8 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-full flex items-center justify-center transition-all duration-200 group/stats"
                 title="Ver estadísticas"
               >
                 <BarChart3 className="w-3 h-3 md:w-4 md:h-4" />
@@ -226,11 +226,11 @@ export function MainInterface({ onStartRegistration }: MainInterfaceProps) {
                 onClick={() => handleBarberSelect(barber)}
                 className="w-full text-center"
               >
-                <div className="flex flex-col items-center justify-center w-full h-full p-2">
-                  <div className="w-8 h-8 md:w-12 md:h-12 lg:w-16 lg:h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center mb-1 md:mb-2 group-hover:bg-opacity-30 transition-all">
-                    <Scissors className="w-4 h-4 md:w-6 md:h-6 lg:w-8 lg:h-8" />
+                <div className="flex flex-col items-center justify-center w-full h-full p-4 tablet:p-6 landscape:p-4">
+                  <div className="w-12 h-12 md:w-16 md:h-16 lg:w-20 lg:h-20 bg-white bg-opacity-20 rounded-full flex items-center justify-center mb-3 md:mb-4 group-hover:bg-opacity-30 transition-all">
+                    <Scissors className="w-6 h-6 md:w-8 md:h-8 lg:w-10 lg:h-10" />
                   </div>
-                  <h3 className="text-xs md:text-sm lg:text-base font-bold leading-tight text-center px-1 break-words w-full">
+                  <h3 className="text-base md:text-lg lg:text-xl font-bold leading-tight text-center px-2 break-words w-full">
                     {barber.name}
                   </h3>
                 </div>
