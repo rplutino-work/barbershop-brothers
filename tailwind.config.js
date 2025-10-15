@@ -47,6 +47,11 @@ module.exports = {
         'xl': '1280px',
         '2xl': '1536px',
       },
+      gridTemplateColumns: {
+        '5': 'repeat(5, minmax(0, 1fr))',
+        '7': 'repeat(7, minmax(0, 1fr))',
+        '8': 'repeat(8, minmax(0, 1fr))',
+      },
     },
   },
   plugins: [],

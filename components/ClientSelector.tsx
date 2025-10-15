@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { User, Plus, Search, Phone } from 'lucide-react'
+import { LoadingSpinner } from './ui/LoadingSpinner'
 
 interface Client {
   id: string
@@ -156,7 +157,9 @@ export function ClientSelector({
         exit={{ opacity: 0, x: -300 }}
         className="absolute inset-0 bg-white p-8 flex items-center justify-center"
       >
-        <div className="text-lg text-gray-900 bg-white p-4 rounded-lg">Cargando clientes...</div>
+        <div className="bg-white p-8 rounded-2xl shadow-lg">
+          <LoadingSpinner size="lg" text="Cargando clientes..." />
+        </div>
       </motion.div>
     )
   }
@@ -166,20 +169,20 @@ export function ClientSelector({
       initial={{ opacity: 0, x: 300 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -300 }}
-      className="absolute inset-0 bg-white p-4 tablet:p-6 md:p-8 flex flex-col overflow-hidden"
+      className="absolute inset-0 bg-white p-4 tablet:p-6 landscape:p-4 md:p-8 flex flex-col overflow-hidden"
     >
-      <div className="flex items-center mb-4 md:mb-8 flex-shrink-0">
+      <div className="flex items-center mb-3 landscape:mb-2 md:mb-6 flex-shrink-0">
         <button
           onClick={onBack}
           className="mr-4 p-2 text-gray-600 hover:text-gray-800 transition-colors"
         >
           ← Volver
         </button>
-        <h2 className="text-2xl md:text-3xl font-bold text-gray-900">Cliente</h2>
+        <h2 className="text-xl landscape:text-2xl md:text-3xl font-bold text-gray-900">Cliente</h2>
       </div>
 
-      {/* Resumen del servicio */}
-      <div className="bg-gray-50 rounded-2xl p-4 md:p-6 mb-4 md:mb-8 flex-shrink-0">
+      {/* Resumen del servicio - Más compacto en landscape */}
+      <div className="bg-gray-50 rounded-2xl p-3 landscape:p-4 md:p-6 mb-3 landscape:mb-4 md:mb-6 flex-shrink-0">
         <h3 className="text-lg md:text-xl font-semibold text-force-dark mb-4">Resumen del Servicio</h3>
         <div className="space-y-2">
           <div className="flex justify-between">
@@ -231,13 +234,13 @@ export function ClientSelector({
           </div>
 
           {/* Lista de clientes - Asegurar que sea scrolleable */}
-          <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0" style={{ maxHeight: 'calc(100vh - 400px)' }}>
-            <div className="space-y-3 pb-4 pr-2">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 landscape:max-h-96" style={{ maxHeight: 'calc(100vh - 400px)' }}>
+        <div className="space-y-2 landscape:space-y-3 pb-4 pr-2">
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => onSelectClient(null)}
-                className="w-full bg-gray-100 border-2 border-gray-300 rounded-xl md:rounded-2xl p-4 tablet:p-5 flex items-center justify-between hover:bg-gray-200 transition-colors touch-target"
+                className="w-full bg-gray-100 border-2 border-gray-300 rounded-xl md:rounded-2xl p-3 tablet:p-5 landscape:p-4 flex items-center justify-between hover:bg-gray-200 transition-colors touch-target"
               >
                 <div className="flex items-center">
                   <div className="w-10 h-10 md:w-12 md:h-12 bg-gray-300 rounded-lg md:rounded-xl flex items-center justify-center mr-3 md:mr-4">

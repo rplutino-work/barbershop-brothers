@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Menu, X, Scissors, Calendar, BarChart3, DollarSign, TrendingUp, Clock } from 'lucide-react'
+import { LoadingSpinner } from './ui/LoadingSpinner'
 import { BarberSelector } from './BarberSelector'
 import { DailyServices } from './DailyServices'
 
@@ -76,10 +77,27 @@ export function MainInterface({ onStartRegistration }: MainInterfaceProps) {
     }
   }
 
+  // Calcular columnas del grid según cantidad de barberos
+  const getGridCols = () => {
+    const count = barbers.length
+    if (count === 1) return 'grid-cols-1'
+    if (count === 2) return 'grid-cols-2'
+    if (count === 3) return 'grid-cols-3'
+    if (count === 4) return 'grid-cols-2 tablet:grid-cols-2 landscape:grid-cols-4'
+    if (count === 5) return 'grid-cols-3 tablet:grid-cols-3 landscape:grid-cols-5'
+    if (count === 6) return 'grid-cols-3 tablet:grid-cols-3 landscape:grid-cols-6'
+    if (count === 7) return 'grid-cols-3 tablet:grid-cols-4 landscape:grid-cols-7'
+    if (count === 8) return 'grid-cols-4 tablet:grid-cols-4 landscape:grid-cols-8'
+    // Para más de 8, usar grid dinámico
+    return 'grid-cols-4 tablet:grid-cols-4 landscape:grid-cols-6'
+  }
+
   if (loading) {
     return (
       <div className="h-full w-full flex items-center justify-center bg-gray-100">
-        <div className="text-xl text-gray-900 bg-white p-4 rounded-lg shadow-sm">Cargando barberos...</div>
+        <div className="bg-white p-8 rounded-2xl shadow-lg">
+          <LoadingSpinner size="lg" text="Cargando barberos..." />
+        </div>
       </div>
     )
   }
@@ -155,15 +173,15 @@ export function MainInterface({ onStartRegistration }: MainInterfaceProps) {
       )}
 
       {/* Contenido Principal - Botones de Barberos */}
-      <div className="h-full flex flex-col items-center justify-center py-8 px-4 tablet:px-8 overflow-y-auto">
-        <div className="grid grid-cols-2 tablet:grid-cols-3 lg:grid-cols-4 gap-4 tablet:gap-6 lg:gap-8 max-w-6xl w-full">
+      <div className="h-full flex flex-col items-center justify-center px-4 tablet:px-8">
+        <div className={`grid ${getGridCols()} gap-2 tablet:gap-4 landscape:gap-3 w-full h-full items-center justify-items-center`}>
           {barbers.map((barber, index) => (
             <motion.div
               key={barber.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
-              className="relative bg-gradient-to-br from-primary-500 to-primary-600 text-white p-6 tablet:p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 group aspect-square flex items-center justify-center"
+              className="relative bg-gradient-to-br from-primary-500 to-primary-600 text-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 group flex items-center justify-center w-full aspect-square max-w-full"
             >
               {/* Botón de estadísticas */}
               <button
@@ -171,10 +189,10 @@ export function MainInterface({ onStartRegistration }: MainInterfaceProps) {
                   e.stopPropagation()
                   fetchBarberStats(barber)
                 }}
-                className="absolute top-3 right-3 w-8 h-8 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-full flex items-center justify-center transition-all duration-200 group/stats"
+                className="absolute top-1 right-1 w-5 h-5 md:w-12 md:h-12 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-full flex items-center justify-center transition-all duration-200 group/stats"
                 title="Ver estadísticas"
               >
-                <BarChart3 className="w-4 h-4" />
+                <BarChart3 className="w-3 h-3 md:w-4 md:h-4" />
               </button>
 
               {/* Contenido principal */}
@@ -182,11 +200,13 @@ export function MainInterface({ onStartRegistration }: MainInterfaceProps) {
                 onClick={() => handleBarberSelect(barber)}
                 className="w-full text-center"
               >
-                <div className="flex flex-col items-center justify-center">
-                  <div className="w-16 h-16 tablet:w-20 tablet:h-20 bg-white bg-opacity-20 rounded-full flex items-center justify-center mb-3 tablet:mb-4 group-hover:bg-opacity-30 transition-all">
-                    <Scissors className="w-8 h-8 tablet:w-10 tablet:h-10" />
+                <div className="flex flex-col items-center justify-center w-full h-full p-2">
+                  <div className="w-8 h-8 md:w-12 md:h-12 lg:w-16 lg:h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center mb-1 md:mb-2 group-hover:bg-opacity-30 transition-all">
+                    <Scissors className="w-4 h-4 md:w-6 md:h-6 lg:w-8 lg:h-8" />
                   </div>
-                  <h3 className="text-xl tablet:text-2xl font-bold">{barber.name}</h3>
+                  <h3 className="text-xs md:text-sm lg:text-base font-bold leading-tight text-center px-1 break-words w-full">
+                    {barber.name}
+                  </h3>
                 </div>
               </button>
             </motion.div>
@@ -241,8 +261,7 @@ export function MainInterface({ onStartRegistration }: MainInterfaceProps) {
 
               {loadingStats ? (
                 <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-4"></div>
-                  <p className="text-gray-600">Cargando estadísticas...</p>
+                  <LoadingSpinner size="md" text="Cargando estadísticas..." />
                 </div>
               ) : (
                 <div className="space-y-4">

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Edit, Calendar, User, Scissors, Phone, CreditCard, Plus } from 'lucide-react'
+import { LoadingSpinner } from './ui/LoadingSpinner'
 
 interface Payment {
   id: string
@@ -102,7 +103,9 @@ export function DailyServices({ onRegisterNew, onBack }: DailyServicesProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-lg text-gray-900 bg-white p-4 rounded-lg shadow-sm">Cargando servicios del día...</div>
+        <div className="bg-white p-8 rounded-2xl shadow-lg">
+          <LoadingSpinner size="lg" text="Cargando servicios del día..." />
+        </div>
       </div>
     )
   }
@@ -308,7 +311,7 @@ function EditServiceModal({
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4">
-          <div className="text-center text-gray-900 bg-white p-4 rounded-lg shadow-sm">Cargando...</div>
+          <LoadingSpinner size="md" text="Cargando..." />
         </div>
       </div>
     )

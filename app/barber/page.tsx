@@ -7,6 +7,7 @@ import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { BarberServiceHistory } from '@/components/BarberServiceHistory'
 import { BarberAppointments } from '@/components/BarberAppointments'
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 
 interface BarberStats {
   todayRevenue: number
@@ -67,7 +68,9 @@ export default function BarberDashboard() {
   if (status === 'loading' || loading) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="text-xl">Cargando...</div>
+        <div className="bg-white p-8 rounded-2xl shadow-lg">
+          <LoadingSpinner size="lg" text="Cargando dashboard..." />
+        </div>
       </div>
     )
   }

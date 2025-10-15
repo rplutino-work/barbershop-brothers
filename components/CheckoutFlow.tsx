@@ -7,6 +7,7 @@ import { ServiceSelector } from './ServiceSelector'
 import { ClientSelector } from './ClientSelector'
 import { PaymentSelector } from './PaymentSelector'
 import { CheckCircle } from 'lucide-react'
+import { LoadingSpinner } from './ui/LoadingSpinner'
 
 interface Barber {
   id: string

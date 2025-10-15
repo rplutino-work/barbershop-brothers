@@ -11,6 +11,7 @@ import { PaymentHistory } from '@/components/admin/PaymentHistory'
 import { ClientManagement } from '@/components/admin/ClientManagement'
 import { ScheduleManagement } from '@/components/admin/ScheduleManagement'
 import { Dashboard } from '@/components/admin/Dashboard'
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 
 type AdminTab = 'dashboard' | 'barbers' | 'services' | 'clients' | 'payments' | 'schedules' | 'settings'
 
@@ -29,7 +30,9 @@ export default function AdminPage() {
   if (status === 'loading') {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="text-xl">Cargando...</div>
+        <div className="bg-white p-8 rounded-2xl shadow-lg">
+          <LoadingSpinner size="lg" text="Cargando panel de administración..." />
+        </div>
       </div>
     )
   }

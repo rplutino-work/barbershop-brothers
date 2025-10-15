@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Calendar, Clock, User, Phone, Scissors, CheckCircle } from 'lucide-react'
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 
 interface Barber {
   id: string
@@ -545,7 +546,14 @@ export default function ReservarPage() {
                   disabled={loading}
                   className="w-full bg-primary-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {loading ? 'Confirmando...' : 'Confirmar Reserva'}
+                  {loading ? (
+                    <div className="flex items-center justify-center space-x-2">
+                      <LoadingSpinner size="sm" color="white" />
+                      <span>Confirmando...</span>
+                    </div>
+                  ) : (
+                    'Confirmar Reserva'
+                  )}
                 </button>
               </form>
             </div>
