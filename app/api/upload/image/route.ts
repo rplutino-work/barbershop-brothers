@@ -1,100 +1,98 @@
 import { NextRequest, NextResponse } from 'next/server'
-import sharp from 'sharp'
-import { writeFile, mkdir } from 'fs/promises'
-import path from 'path'
+import { v2 as cloudinary } from 'cloudinary'
+
+// Configurar Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+})
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('📤 Iniciando upload de imagen a Cloudinary...')
+    
     const formData = await request.formData()
     const file = formData.get('file') as File
     
     if (!file) {
+      console.error('❌ No se proporcionó archivo')
       return NextResponse.json(
         { error: 'No se proporcionó ningún archivo' },
         { status: 400 }
       )
     }
 
+    console.log('📄 Archivo recibido:', file.name, 'Tipo:', file.type, 'Tamaño:', file.size)
+
     // Validar que sea una imagen
     if (!file.type.startsWith('image/')) {
+      console.error('❌ Archivo no es imagen:', file.type)
       return NextResponse.json(
         { error: 'El archivo debe ser una imagen' },
         { status: 400 }
       )
     }
 
-    // Convertir el archivo a buffer
+    // Convertir el archivo a buffer y luego a base64
+    console.log('🔄 Convirtiendo a buffer...')
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
+    const base64 = buffer.toString('base64')
+    const dataURI = `data:${file.type};base64,${base64}`
+    console.log('✅ Buffer y DataURI creados')
 
-    // Crear directorio si no existe
-    const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'barbers')
-    await mkdir(uploadsDir, { recursive: true })
-
-    // Generar nombre único
-    const timestamp = Date.now()
-    const fileName = `barber-${timestamp}.webp`
-    const filePath = path.join(uploadsDir, fileName)
-
-    // Comprimir y optimizar la imagen con sharp
-    await sharp(buffer)
-      .resize(400, 400, { 
-        fit: 'cover',
-        position: 'center'
-      })
-      .webp({ 
-        quality: 80,
-        effort: 6
-      })
-      .toFile(filePath)
-
-    // Retornar la URL relativa
-    const imageUrl = `/uploads/barbers/${fileName}`
+    // Subir a Cloudinary
+    console.log('☁️ Subiendo a Cloudinary...')
+    const result = await cloudinary.uploader.upload(dataURI, {
+      folder: 'barbershop/barbers',
+      transformation: [
+        { width: 400, height: 400, crop: 'fill', gravity: 'face' },
+        { quality: 'auto:good', fetch_format: 'auto' }
+      ]
+    })
+    
+    console.log('✅ Imagen subida a Cloudinary:', result.secure_url)
 
     return NextResponse.json({
       success: true,
-      imageUrl,
+      imageUrl: result.secure_url,
+      publicId: result.public_id
     }, { status: 200 })
   } catch (error: any) {
-    console.error('Error al subir imagen:', error)
+    console.error('❌ Error detallado al subir imagen:', {
+      message: error.message,
+      stack: error.stack,
+      code: error.code
+    })
     return NextResponse.json(
-      { error: 'Error al procesar la imagen' },
+      { 
+        error: 'Error al procesar la imagen',
+        details: error.message,
+        code: error.code 
+      },
       { status: 500 }
     )
   }
 }
 
-// DELETE - Eliminar imagen (opcional, para cuando se cambie la imagen)
+// DELETE - Eliminar imagen de Cloudinary
 export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const imageUrl = searchParams.get('imageUrl')
+    const publicId = searchParams.get('publicId')
 
-    if (!imageUrl) {
+    if (!publicId) {
       return NextResponse.json(
-        { error: 'No se proporcionó URL de imagen' },
+        { error: 'No se proporcionó ID de imagen' },
         { status: 400 }
       )
     }
 
-    // Solo eliminar si es una imagen de uploads/barbers
-    if (!imageUrl.startsWith('/uploads/barbers/')) {
-      return NextResponse.json(
-        { error: 'URL de imagen inválida' },
-        { status: 400 }
-      )
-    }
-
-    const filePath = path.join(process.cwd(), 'public', imageUrl)
-    
-    // Intentar eliminar el archivo (no falla si no existe)
-    try {
-      const fs = require('fs')
-      fs.unlinkSync(filePath)
-    } catch (err) {
-      // Archivo no existe o no se pudo eliminar
-      console.log('Archivo no encontrado o no se pudo eliminar:', filePath)
-    }
+    // Eliminar de Cloudinary
+    console.log('🗑️ Eliminando imagen de Cloudinary:', publicId)
+    await cloudinary.uploader.destroy(publicId)
+    console.log('✅ Imagen eliminada de Cloudinary')
 
     return NextResponse.json({
       success: true,

@@ -8,24 +8,43 @@ export async function GET(
   try {
     const now = new Date()
     
-    // Fechas para cálculos
-    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    // Fechas para cálculos en hora local
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0)
+    const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999)
+    
     const startOfWeek = new Date(now)
     startOfWeek.setDate(now.getDate() - now.getDay()) // Domingo de esta semana
     startOfWeek.setHours(0, 0, 0, 0)
     
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0)
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
 
-    // Ingresos del barbero
-    const todayRevenue = await prisma.payment.aggregate({
+    // Obtener todos los pagos y filtrar en el servidor por fecha local
+    const allPayments = await prisma.payment.findMany({
       where: {
         barberId: params.id,
-        createdAt: { gte: startOfDay },
         status: 'COMPLETED'
       },
-      _sum: { amount: true }
+      select: {
+        id: true,
+        amount: true,
+        createdAt: true
+      }
     })
+
+    // Filtrar por hoy comparando strings de fecha
+    const todayStr = now.toLocaleDateString('es-AR')
+    const todayPayments = allPayments.filter(p => {
+      const paymentDate = new Date(p.createdAt)
+      return paymentDate.toLocaleDateString('es-AR') === todayStr
+    })
+
+    // Ingresos del barbero HOY
+    const todayRevenue = {
+      _sum: {
+        amount: todayPayments.reduce((sum, p) => sum + p.amount, 0)
+      }
+    }
 
     const weekRevenue = await prisma.payment.aggregate({
       where: {
@@ -45,14 +64,8 @@ export async function GET(
       _sum: { amount: true }
     })
 
-    // Cantidad de servicios
-    const todayServices = await prisma.payment.count({
-      where: {
-        barberId: params.id,
-        createdAt: { gte: startOfDay },
-        status: 'COMPLETED'
-      }
-    })
+    // Cantidad de servicios HOY (ya filtrado arriba)
+    const todayServices = todayPayments.length
 
     const weekServices = await prisma.payment.count({
       where: {

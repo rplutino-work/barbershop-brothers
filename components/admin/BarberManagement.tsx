@@ -55,6 +55,10 @@ export function BarberManagement() {
       const url = editingBarber ? `/api/users/${editingBarber.id}` : '/api/users'
       const method = editingBarber ? 'PUT' : 'POST'
       
+      console.log('📤 Enviando datos del barbero:')
+      console.log('FormData:', formData)
+      console.log('ImageURL en formData:', formData.imageUrl)
+      
       const response = await fetch(url, {
         method,
         headers: {
@@ -100,9 +104,12 @@ export function BarberManagement() {
 
       if (response.ok) {
         const data = await response.json()
-        setFormData({ ...formData, imageUrl: data.imageUrl })
+        console.log('✅ Imagen subida, URL:', data.imageUrl)
+        setFormData(prev => ({ ...prev, imageUrl: data.imageUrl }))
       } else {
-        alert('Error al subir la imagen')
+        const errorData = await response.json()
+        console.error('Error al subir imagen:', errorData)
+        alert(`Error al subir la imagen: ${errorData.error || 'Error desconocido'}`)
       }
     } catch (error: any) {
       console.error('Error al subir imagen:', error)
@@ -352,6 +359,15 @@ export function BarberManagement() {
                   Foto del Barbero
                 </label>
                 
+                {uploadingImage && (
+                  <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="w-6 h-6 border-3 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                      <p className="text-sm text-blue-700">Subiendo imagen a Cloudinary...</p>
+                    </div>
+                  </div>
+                )}
+                
                 {imagePreview ? (
                   <div className="relative inline-block">
                     <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-gray-200">
@@ -402,14 +418,16 @@ export function BarberManagement() {
                   type="button"
                   onClick={() => setShowModal(false)}
                   className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+                  disabled={uploadingImage}
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                  disabled={uploadingImage}
+                  className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {editingBarber ? 'Actualizar' : 'Crear'}
+                  {uploadingImage ? 'Subiendo imagen...' : (editingBarber ? 'Actualizar' : 'Crear')}
                 </button>
               </div>
             </form>

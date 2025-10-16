@@ -7,7 +7,12 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { name, email, password, role = 'BARBER', commissionRate, imageUrl } = await request.json()
+    const body = await request.json()
+    const { name, email, password, role = 'BARBER', commissionRate, imageUrl } = body
+    
+    console.log('📝 PUT /api/users/' + params.id)
+    console.log('Body recibido:', JSON.stringify(body, null, 2))
+    console.log('ImageURL:', imageUrl)
 
     if (!name || !email) {
       return NextResponse.json(
@@ -34,7 +39,10 @@ export async function PUT(
 
     // Actualizar imageUrl si se proporciona (incluyendo null para borrar)
     if (imageUrl !== undefined) {
+      console.log('✅ Actualizando imageUrl a:', imageUrl)
       updateData.imageUrl = imageUrl
+    } else {
+      console.log('⚠️  imageUrl no está definido en el body')
     }
 
     const user = await prisma.user.update({
