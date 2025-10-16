@@ -94,6 +94,14 @@ export function WeeklyClosing() {
     setWeekDays(days)
 
     fetchWeeklyData(monday.toISOString(), sunday.toISOString())
+    
+    // Auto-refresh cada 30 segundos
+    const interval = setInterval(() => {
+      console.log('🔄 Auto-refresh: Recargando cierre semanal...')
+      fetchWeeklyData(monday.toISOString(), sunday.toISOString())
+    }, 30000)
+    
+    return () => clearInterval(interval)
   }, [])
 
   const fetchWeeklyData = async (start: string, end: string) => {

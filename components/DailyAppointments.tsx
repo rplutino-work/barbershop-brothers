@@ -35,6 +35,14 @@ export function DailyAppointments({ onBack }: DailyAppointmentsProps) {
 
   useEffect(() => {
     fetchAppointments()
+    
+    // Auto-refresh cada 30 segundos
+    const interval = setInterval(() => {
+      console.log('🔄 Auto-refresh: Recargando turnos del día...')
+      fetchAppointments()
+    }, 30000)
+    
+    return () => clearInterval(interval)
   }, [selectedDate])
 
   const fetchAppointments = async () => {

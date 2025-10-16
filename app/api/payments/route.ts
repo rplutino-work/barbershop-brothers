@@ -91,7 +91,13 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    return NextResponse.json(payments)
+    return NextResponse.json(payments, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
+    })
   } catch (error: any) {
     console.error('Error al obtener pagos:', error)
     return NextResponse.json(

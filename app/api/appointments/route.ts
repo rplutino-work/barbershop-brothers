@@ -144,7 +144,13 @@ export async function GET(request: NextRequest) {
       orderBy: { date: 'asc' }
     })
 
-    return NextResponse.json(appointments)
+    return NextResponse.json(appointments, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
+    })
   } catch (error: any) {
     console.error('Error al obtener citas:', error)
     return NextResponse.json(

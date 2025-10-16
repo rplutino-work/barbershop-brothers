@@ -25,11 +25,15 @@ interface BarberStats {
   recentServices: Array<{
     id: string
     serviceName: string
+    serviceDurationMinutes: number
     amount: number
     method: string
     clientName?: string
     clientPhone?: string
     createdAt: string
+    serviceStartTime?: string | null
+    serviceEndTime?: string | null
+    serviceDuration?: number | null
   }>
 }
 
@@ -289,8 +293,19 @@ export default function BarberDashboard() {
                                 {service.clientName || 'Cliente Ocasional'}
                               </p>
                               <p className="text-xs text-gray-400">
-                                {new Date(service.createdAt).toLocaleDateString('es-ES')}
+                                {new Date(service.createdAt).toLocaleDateString('es-ES')} {new Date(service.createdAt).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}
                               </p>
+                              {service.serviceStartTime && service.serviceEndTime && service.serviceDuration && (
+                                <p className="text-xs text-blue-600 font-medium">
+                                  <Clock className="w-3 h-3 inline mr-1" />
+                                  {new Date(service.serviceStartTime).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })} - {new Date(service.serviceEndTime).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })} ({Math.floor(service.serviceDuration / 60)}:{(service.serviceDuration % 60).toString().padStart(2, '0')} min)
+                                </p>
+                              )}
+                              {!service.serviceStartTime && (
+                                <p className="text-xs text-orange-500 italic">
+                                  Duración estándar: {service.serviceDurationMinutes} min
+                                </p>
+                              )}
                             </div>
                           </div>
                           <div className="text-right">

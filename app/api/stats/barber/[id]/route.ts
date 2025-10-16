@@ -103,7 +103,7 @@ export async function GET(
       take: 10,
       orderBy: { createdAt: 'desc' },
       include: {
-        service: { select: { name: true } },
+        service: { select: { name: true, duration: true } },
         client: { select: { name: true, phone: true } }
       }
     })
@@ -126,12 +126,22 @@ export async function GET(
       recentServices: recentServices.map(payment => ({
         id: payment.id,
         serviceName: payment.service.name,
+        serviceDurationMinutes: payment.service.duration,
         amount: payment.amount,
         method: payment.method,
         clientName: payment.client?.name,
         clientPhone: payment.client?.phone,
-        createdAt: payment.createdAt
+        createdAt: payment.createdAt,
+        serviceStartTime: (payment as any).serviceStartTime,
+        serviceEndTime: (payment as any).serviceEndTime,
+        serviceDuration: (payment as any).serviceDuration
       }))
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
     })
   } catch (error: any) {
     console.error('Error al obtener estadísticas del barbero:', error)
