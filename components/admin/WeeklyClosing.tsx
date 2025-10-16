@@ -100,16 +100,28 @@ export function WeeklyClosing() {
     try {
       setLoading(true)
       
-      // Obtener pagos de la semana con toda la información
-      const paymentsRes = await fetch(`/api/payments?startDate=${start}&endDate=${end}`)
-      const paymentsData = await paymentsRes.json()
+      // Obtener TODOS los pagos y filtrar en el cliente por fecha local
+      const paymentsRes = await fetch(`/api/payments`)
+      const allPayments = await paymentsRes.json()
+      
+      // Filtrar por semana comparando fechas en hora local
+      const startDate = new Date(start)
+      const endDate = new Date(end)
+      
+      const weekPayments = allPayments.filter((payment: Payment) => {
+        const paymentDate = new Date(payment.createdAt)
+        return paymentDate >= startDate && paymentDate <= endDate
+      })
+      
+      console.log('📅 Semana:', startDate.toLocaleDateString('es-AR'), 'a', endDate.toLocaleDateString('es-AR'))
+      console.log('📊 Pagos encontrados:', weekPayments.length, 'de', allPayments.length, 'totales')
 
-      setPayments(paymentsData)
+      setPayments(weekPayments)
 
       // Agrupar por barbero para el resumen
       const barberMap = new Map<string, BarberSummary>()
 
-      paymentsData.forEach((payment: Payment) => {
+      weekPayments.forEach((payment: Payment) => {
         const barberId = payment.barber.id
         
         if (!barberMap.has(barberId)) {
