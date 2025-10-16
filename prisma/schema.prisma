@@ -17,6 +17,7 @@ model User {
   password        String
   role            String   @default("BARBER") // ADMIN, BARBER
   commissionRate  Float    @default(50) // Porcentaje que se queda el barbero (ej: 50 = 50%)
+  imageUrl        String?  // URL de la imagen del barbero
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -70,6 +71,12 @@ model Payment {
   tip         Float    @default(0) // Propina (solo para transferencias)
   method      String   // CASH, CARD, TRANSFER
   status      String   @default("COMPLETED") // PENDING, COMPLETED, CANCELLED
+  
+  // Tiempos del servicio
+  serviceStartTime DateTime? // Hora de inicio del corte
+  serviceEndTime   DateTime? // Hora de fin del corte
+  serviceDuration  Int?      // Duración en segundos
+  
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

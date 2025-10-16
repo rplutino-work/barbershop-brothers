@@ -13,6 +13,8 @@ export async function GET() {
         name: true,
         email: true,
         role: true,
+        commissionRate: true,
+        imageUrl: true,
         createdAt: true,
       },
     })
@@ -29,7 +31,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const { name, email, password, role = 'BARBER' } = await request.json()
+    const { name, email, password, role = 'BARBER', commissionRate = 50, imageUrl = null } = await request.json()
 
     if (!name || !email || !password) {
       return NextResponse.json(
@@ -46,12 +48,16 @@ export async function POST(request: NextRequest) {
         email,
         password: hashedPassword,
         role: role.toUpperCase(),
+        commissionRate: parseFloat(commissionRate.toString()),
+        imageUrl: imageUrl || null,
       },
       select: {
         id: true,
         name: true,
         email: true,
         role: true,
+        commissionRate: true,
+        imageUrl: true,
         createdAt: true,
       },
     })

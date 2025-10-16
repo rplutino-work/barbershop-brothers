@@ -7,7 +7,7 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { name, email, password, role = 'BARBER' } = await request.json()
+    const { name, email, password, role = 'BARBER', commissionRate, imageUrl } = await request.json()
 
     if (!name || !email) {
       return NextResponse.json(
@@ -27,6 +27,16 @@ export async function PUT(
       updateData.password = await bcrypt.hash(password, 12)
     }
 
+    // Actualizar commissionRate si se proporciona
+    if (commissionRate !== undefined) {
+      updateData.commissionRate = parseFloat(commissionRate.toString())
+    }
+
+    // Actualizar imageUrl si se proporciona (incluyendo null para borrar)
+    if (imageUrl !== undefined) {
+      updateData.imageUrl = imageUrl
+    }
+
     const user = await prisma.user.update({
       where: {
         id: params.id,
@@ -37,6 +47,8 @@ export async function PUT(
         name: true,
         email: true,
         role: true,
+        commissionRate: true,
+        imageUrl: true,
         createdAt: true,
       },
     })

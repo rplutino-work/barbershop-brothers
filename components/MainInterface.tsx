@@ -8,10 +8,12 @@ import { BarberSelector } from './BarberSelector'
 import { DailyServices } from './DailyServices'
 import { DailyAppointments } from './DailyAppointments'
 import { ServiceTimer } from './ServiceTimer'
+import Image from 'next/image'
 
 interface Barber {
   id: string
   name: string
+  imageUrl?: string | null
 }
 
 interface ActiveService {
@@ -117,7 +119,18 @@ export function MainInterface({ onStartRegistration }: MainInterfaceProps) {
       })
 
       if (response.ok) {
+        const serviceData = await response.json()
         await fetchActiveServices()
+        
+        // Guardar datos del servicio para usarlos en el checkout
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('activeServiceData', JSON.stringify({
+            startTime: serviceData.startTime,
+            duration: serviceData.duration,
+            barberId: barber.id
+          }))
+        }
+        
         // Continuar con el flujo de registro
         onStartRegistration(barber)
       }
@@ -324,13 +337,28 @@ export function MainInterface({ onStartRegistration }: MainInterfaceProps) {
                   className="w-full text-center"
                 >
                   <div className="flex flex-col items-center justify-center w-full h-full p-4 tablet:p-6 landscape:p-4">
-                    <div className="w-12 h-12 md:w-16 md:h-16 lg:w-20 lg:h-20 bg-white bg-opacity-20 rounded-full flex items-center justify-center mb-3 md:mb-4 group-hover:bg-opacity-30 transition-all">
-                      {isActive ? (
-                        <StopCircle className="w-6 h-6 md:w-8 md:h-8 lg:w-10 lg:h-10" />
+                    {/* Imagen o Ícono */}
+                    <div className="w-16 h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 rounded-full overflow-hidden mb-3 md:mb-4 border-4 border-white border-opacity-30 group-hover:border-opacity-50 transition-all shadow-lg">
+                      {barber.imageUrl ? (
+                        <Image
+                          src={barber.imageUrl}
+                          alt={barber.name}
+                          width={96}
+                          height={96}
+                          className="object-cover w-full h-full"
+                          priority
+                        />
                       ) : (
-                        <Scissors className="w-6 h-6 md:w-8 md:h-8 lg:w-10 lg:h-10" />
+                        <div className="w-full h-full bg-white bg-opacity-20 flex items-center justify-center group-hover:bg-opacity-30 transition-all">
+                          {isActive ? (
+                            <StopCircle className="w-8 h-8 md:w-10 md:h-10 lg:w-12 lg:h-12" />
+                          ) : (
+                            <Scissors className="w-8 h-8 md:w-10 md:h-10 lg:w-12 lg:h-12" />
+                          )}
+                        </div>
                       )}
                     </div>
+                    
                     <h3 className="text-xl md:text-2xl lg:text-3xl font-bold leading-tight text-center px-2 break-words w-full mb-2">
                       {barber.name}
                     </h3>

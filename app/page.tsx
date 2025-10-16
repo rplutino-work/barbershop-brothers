@@ -108,6 +108,17 @@ export default function HomePage() {
     try {
       console.log('Servicio completado:', data)
       
+      // Obtener datos del servicio activo del sessionStorage
+      let serviceData: any = null
+      if (typeof window !== 'undefined') {
+        const storedData = sessionStorage.getItem('activeServiceData')
+        if (storedData) {
+          serviceData = JSON.parse(storedData)
+          // Limpiar después de usar
+          sessionStorage.removeItem('activeServiceData')
+        }
+      }
+      
       const response = await fetch('/api/payments', {
         method: 'POST',
         headers: {
@@ -120,6 +131,9 @@ export default function HomePage() {
           tip: data.tip || 0,
           method: data.paymentMethod,
           clientId: data.client?.id || null,
+          // Datos del servicio activo (si existen)
+          serviceStartTime: serviceData?.startTime || null,
+          serviceDuration: serviceData?.duration || null,
         }),
       })
 

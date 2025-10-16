@@ -44,10 +44,12 @@ export function DailyServices({ onRegisterNew, onBack }: DailyServicesProps) {
 
   const fetchTodayServices = async () => {
     try {
-      const today = new Date()
-      const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+      // Crear inicio y fin del día de HOY en hora local
+      const now = new Date()
+      const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0)
+      const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999)
       
-      const response = await fetch(`/api/payments?date=${startOfDay.toISOString()}`)
+      const response = await fetch(`/api/payments?startDate=${startOfToday.toISOString()}&endDate=${endOfToday.toISOString()}`)
       if (response.ok) {
         const data = await response.json()
         setServices(data)

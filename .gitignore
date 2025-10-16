@@ -46,4 +46,8 @@ next-env.d.ts
 *.swo
 
 # OS
-Thumbs.dbdata-backup.json
+Thumbs.db
+data-backup.json
+
+# Uploaded images
+/public/uploads/

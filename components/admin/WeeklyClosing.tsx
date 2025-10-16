@@ -35,10 +35,15 @@ interface DayService {
   barberName: string
   clientName: string
   serviceName: string
+  serviceDurationMinutes: number // Duración estándar del servicio en minutos
   amount: number
   tip: number
   method: string
   total: number
+  createdAt: string
+  serviceStartTime: string | null
+  serviceEndTime: string | null
+  serviceDuration: number | null
 }
 
 interface BarberSummary {
@@ -162,12 +167,15 @@ export function WeeklyClosing() {
 
   // Filtrar pagos del día seleccionado
   const getDayPayments = (day: string): DayService[] => {
+    // Crear inicio y fin del día en hora local
     const dayDate = new Date(day + 'T00:00:00')
+    const startOfDay = new Date(dayDate.getFullYear(), dayDate.getMonth(), dayDate.getDate())
+    const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000)
     
     return payments
       .filter(payment => {
         const paymentDate = new Date(payment.createdAt)
-        return paymentDate.toDateString() === dayDate.toDateString()
+        return paymentDate >= startOfDay && paymentDate < endOfDay
       })
       .map(payment => ({
         id: payment.id,
@@ -175,10 +183,15 @@ export function WeeklyClosing() {
         barberName: payment.barber.name,
         clientName: payment.client?.name || 'Sin cliente',
         serviceName: payment.service.name,
+        serviceDurationMinutes: payment.service.duration, // Duración estándar del servicio
         amount: payment.amount,
         tip: payment.tip || 0,
         method: payment.method,
-        total: payment.amount + (payment.tip || 0)
+        total: payment.amount + (payment.tip || 0),
+        createdAt: payment.createdAt,
+        serviceStartTime: (payment as any).serviceStartTime || null,
+        serviceEndTime: (payment as any).serviceEndTime || null,
+        serviceDuration: (payment as any).serviceDuration || null
       }))
       .sort((a, b) => a.time.localeCompare(b.time))
   }
@@ -364,10 +377,12 @@ export function WeeklyClosing() {
             <table className="w-full">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Hora</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Barbero</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cliente</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Servicio</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Inicio Corte</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fin Corte</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Duración</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Monto</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Propina</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Pago</th>
@@ -377,12 +392,6 @@ export function WeeklyClosing() {
               <tbody className="divide-y divide-gray-200">
                 {dayPayments.map((service) => (
                   <tr key={service.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <div className="flex items-center gap-2">
-                        <Clock className="w-4 h-4 text-gray-400" />
-                        <span className="font-medium">{service.time}</span>
-                      </div>
-                    </td>
                     <td className="px-4 py-3 whitespace-nowrap">
                       <div className="flex items-center gap-2">
                         <User className="w-4 h-4 text-primary-600" />
@@ -397,6 +406,56 @@ export function WeeklyClosing() {
                         <Scissors className="w-4 h-4 text-blue-600" />
                         <span className="text-gray-900">{service.serviceName}</span>
                       </div>
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      {service.serviceStartTime ? (
+                        <div className="flex items-center gap-1">
+                          <Clock className="w-3 h-3 text-green-600" />
+                          <span className="text-sm text-gray-900">
+                            {new Date(service.serviceStartTime).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1">
+                          <Clock className="w-3 h-3 text-orange-500" />
+                          <span className="text-sm text-gray-700 italic">
+                            {(() => {
+                              // Calcular inicio estimado: createdAt - duración del servicio
+                              const createdDate = new Date(service.createdAt)
+                              const estimatedStart = new Date(createdDate.getTime() - service.serviceDurationMinutes * 60 * 1000)
+                              return estimatedStart.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
+                            })()}
+                          </span>
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      {service.serviceEndTime ? (
+                        <div className="flex items-center gap-1">
+                          <Clock className="w-3 h-3 text-red-600" />
+                          <span className="text-sm text-gray-900">
+                            {new Date(service.serviceEndTime).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1">
+                          <Clock className="w-3 h-3 text-orange-500" />
+                          <span className="text-sm text-gray-700 italic">
+                            {new Date(service.createdAt).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      {service.serviceDuration ? (
+                        <span className="text-sm font-medium text-blue-600">
+                          {Math.floor(service.serviceDuration / 60)}:{(service.serviceDuration % 60).toString().padStart(2, '0')} min
+                        </span>
+                      ) : (
+                        <span className="text-sm font-medium text-orange-500 italic">
+                          {service.serviceDurationMinutes} min
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap font-medium text-gray-900">
                       ${service.amount.toLocaleString()}
@@ -460,7 +519,7 @@ export function WeeklyClosing() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-2">
                         <User className="w-5 h-5 text-primary-600" />
-                        <span className="font-medium">{summary.barberName}</span>
+                        <span className="font-medium text-gray-900">{summary.barberName}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-gray-900">{summary.totalServices}</td>

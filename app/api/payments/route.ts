@@ -3,13 +3,20 @@ import { prisma } from '@/lib/prisma'
 
 export async function POST(request: NextRequest) {
   try {
-    const { barberId, serviceId, amount, tip, method, clientId } = await request.json()
+    const { barberId, serviceId, amount, tip, method, clientId, serviceStartTime, serviceDuration } = await request.json()
 
     if (!barberId || !serviceId || !amount || !method) {
       return NextResponse.json(
         { error: 'Faltan campos requeridos' },
         { status: 400 }
       )
+    }
+
+    // Calcular serviceEndTime si tenemos startTime y duration
+    let serviceEndTime = null
+    if (serviceStartTime && serviceDuration) {
+      const startDate = new Date(serviceStartTime)
+      serviceEndTime = new Date(startDate.getTime() + serviceDuration * 1000) // duration está en segundos
     }
 
     const payment = await prisma.payment.create({
@@ -21,6 +28,10 @@ export async function POST(request: NextRequest) {
         method: method.toUpperCase(),
         status: 'COMPLETED',
         clientId: clientId || null,
+        // Datos del servicio activo
+        serviceStartTime: serviceStartTime ? new Date(serviceStartTime) : null,
+        serviceEndTime: serviceEndTime,
+        serviceDuration: serviceDuration || null,
       },
       include: {
         barber: true,
@@ -48,7 +59,7 @@ export async function GET(request: NextRequest) {
 
     let whereClause: any = {}
 
-    // Si se especifica un rango de fechas
+    // Si se especifica un rango de fechas (ya vienen en ISO con la zona horaria correcta del cliente)
     if (startDate && endDate) {
       whereClause.createdAt = {
         gte: new Date(startDate),
@@ -57,13 +68,14 @@ export async function GET(request: NextRequest) {
     }
     // Si se especifica una fecha, filtrar por ese día
     else if (date) {
+      // La fecha viene como string ISO del cliente
       const filterDate = new Date(date)
-      const startOfDay = new Date(filterDate.getFullYear(), filterDate.getMonth(), filterDate.getDate())
-      const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000)
+      const startOfDay = new Date(filterDate.getFullYear(), filterDate.getMonth(), filterDate.getDate(), 0, 0, 0, 0)
+      const endOfDay = new Date(filterDate.getFullYear(), filterDate.getMonth(), filterDate.getDate(), 23, 59, 59, 999)
       
       whereClause.createdAt = {
         gte: startOfDay,
-        lt: endOfDay
+        lte: endOfDay
       }
     }
 
