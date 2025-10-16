@@ -44,15 +44,22 @@ export function DailyServices({ onRegisterNew, onBack }: DailyServicesProps) {
 
   const fetchTodayServices = async () => {
     try {
-      // Crear inicio y fin del día de HOY en hora local
-      const now = new Date()
-      const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0)
-      const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999)
-      
-      const response = await fetch(`/api/payments?startDate=${startOfToday.toISOString()}&endDate=${endOfToday.toISOString()}`)
+      // Obtener TODOS los pagos y filtrar en el cliente
+      const response = await fetch(`/api/payments`)
       if (response.ok) {
-        const data = await response.json()
-        setServices(data)
+        const allData = await response.json()
+        
+        // Filtrar solo los de hoy comparando en hora local
+        const now = new Date()
+        const todayStr = now.toLocaleDateString('es-AR')
+        
+        const todayServices = allData.filter((payment: Payment) => {
+          const paymentDate = new Date(payment.createdAt)
+          const paymentStr = paymentDate.toLocaleDateString('es-AR')
+          return paymentStr === todayStr
+        })
+        
+        setServices(todayServices)
       }
     } catch (error: any) {
       console.error('Error al obtener servicios del día:', error)
