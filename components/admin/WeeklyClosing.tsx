@@ -195,8 +195,7 @@ export function WeeklyClosing() {
         summary.serviceDetails.push({
           amount: paymentAmount,
           commissionRate: serviceCommissionRate,
-          isServiceCut: isServiceCut,
-          serviceId: payment.serviceId
+          isServiceCut: isServiceCut
         })
         
         if (isServiceCut) {
