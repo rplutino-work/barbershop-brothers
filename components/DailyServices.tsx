@@ -40,20 +40,18 @@ export function DailyServices({ onRegisterNew, onBack }: DailyServicesProps) {
 
   useEffect(() => {
     fetchTodayServices()
-    
-    // Auto-refresh cada 30 segundos
-    const interval = setInterval(() => {
-      console.log('🔄 Auto-refresh: Recargando servicios del día...')
-      fetchTodayServices()
-    }, 30000)
-    
-    return () => clearInterval(interval)
   }, [])
 
   const fetchTodayServices = async () => {
     try {
       // Obtener TODOS los pagos y filtrar en el cliente
-      const response = await fetch(`/api/payments`)
+      const response = await fetch(`/api/payments`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache'
+        }
+      })
       if (response.ok) {
         const allData = await response.json()
         

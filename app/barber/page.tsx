@@ -10,13 +10,13 @@ import { BarberAppointments } from '@/components/BarberAppointments'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 
 interface BarberStats {
-  todayRevenue: number
-  weekRevenue: number
-  monthRevenue: number
+  todayEarnings: number  // Ganancias personales (comisión + propinas)
+  weekEarnings: number
+  monthEarnings: number
   todayServices: number
   weekServices: number
   monthServices: number
-  averageService: number
+  averageEarnings: number  // Promedio de ganancias por servicio
   barber?: {
     id: string
     name: string
@@ -27,6 +27,7 @@ interface BarberStats {
     serviceName: string
     serviceDurationMinutes: number
     amount: number
+    tip: number
     method: string
     clientName?: string
     clientPhone?: string
@@ -57,10 +58,23 @@ export default function BarberDashboard() {
 
   const fetchBarberStats = async () => {
     try {
-      const response = await fetch(`/api/stats/barber/${session?.user.id}`)
+      console.log('🔍 Fetching stats for barber ID:', session?.user.id)
+      const response = await fetch(`/api/stats/barber/${session?.user.id}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache'
+        }
+      })
       if (response.ok) {
         const data = await response.json()
+        console.log('✅ Datos recibidos del API:', data)
+        console.log('💰 Today Earnings:', data.todayEarnings)
+        console.log('💰 Week Earnings:', data.weekEarnings)
+        console.log('💰 Month Earnings:', data.monthEarnings)
         setStats(data)
+      } else {
+        console.error('❌ Error en respuesta:', response.status, response.statusText)
       }
     } catch (error: any) {
       console.error('Error al obtener estadísticas del barbero:', error)
@@ -99,29 +113,29 @@ export default function BarberDashboard() {
 
   const statCards = [
     {
-      title: 'Ingresos Hoy',
-      value: `$${stats.todayRevenue.toLocaleString()}`,
+      title: 'Ganancias Hoy',
+      value: `$${stats.todayEarnings.toLocaleString()}`,
       icon: DollarSign,
       color: 'bg-green-500',
       subtitle: `${stats.todayServices} servicios`
     },
     {
-      title: 'Ingresos Esta Semana',
-      value: `$${stats.weekRevenue.toLocaleString()}`,
+      title: 'Esta Semana',
+      value: `$${stats.weekEarnings.toLocaleString()}`,
       icon: TrendingUp,
       color: 'bg-blue-500',
       subtitle: `${stats.weekServices} servicios`
     },
     {
-      title: 'Ingresos Este Mes',
-      value: `$${stats.monthRevenue.toLocaleString()}`,
+      title: 'Este Mes',
+      value: `$${stats.monthEarnings.toLocaleString()}`,
       icon: Calendar,
       color: 'bg-purple-500',
       subtitle: `${stats.monthServices} servicios`
     },
     {
       title: 'Promedio por Servicio',
-      value: `$${stats.averageService.toLocaleString()}`,
+      value: `$${stats.averageEarnings.toLocaleString()}`,
       icon: Clock,
       color: 'bg-yellow-500',
       subtitle: 'Últimos 30 días'
@@ -228,46 +242,57 @@ export default function BarberDashboard() {
             })}
           </div>
 
-              {/* Comisión y ganancias reales */}
-              {stats.barber && (
-                <div className="bg-gradient-to-r from-primary-50 to-primary-100 rounded-xl shadow-sm border border-primary-200 p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    💰 Tus Ganancias Reales
-                  </h3>
-                  
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between p-4 bg-white rounded-lg">
-                      <span className="text-sm font-medium text-gray-700">Tu Comisión:</span>
-                      <span className="text-2xl font-bold text-primary-600">
-                        {stats.barber.commissionRate}%
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                      <div className="bg-white rounded-lg p-4">
-                        <p className="text-xs text-gray-600 mb-1">Ganancia Hoy</p>
-                        <p className="text-lg font-bold text-green-600">
-                          ${Math.round((stats.todayRevenue || 0) * (stats.barber.commissionRate / 100)).toLocaleString()}
-                        </p>
-                      </div>
-                      
-                      <div className="bg-white rounded-lg p-4">
-                        <p className="text-xs text-gray-600 mb-1">Ganancia Semana</p>
-                        <p className="text-lg font-bold text-blue-600">
-                          ${Math.round((stats.weekRevenue || 0) * (stats.barber.commissionRate / 100)).toLocaleString()}
-                        </p>
-                      </div>
-                      
-                      <div className="bg-white rounded-lg p-4">
-                        <p className="text-xs text-gray-600 mb-1">Ganancia Mes</p>
-                        <p className="text-lg font-bold text-purple-600">
-                          ${Math.round((stats.monthRevenue || 0) * (stats.barber.commissionRate / 100)).toLocaleString()}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+              {/* Estadísticas de tiempo */}
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl shadow-sm border border-blue-200 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  ⏱️ Estadísticas de Tiempo
+                </h3>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {(() => {
+                    // Calcular estadísticas de tiempo de los servicios recientes
+                    const servicesWithDuration = stats.recentServices.filter(s => s.serviceDuration !== null && s.serviceDuration !== undefined)
+                    const avgDuration = servicesWithDuration.length > 0
+                      ? servicesWithDuration.reduce((sum, s) => sum + (s.serviceDuration || 0), 0) / servicesWithDuration.length
+                      : 0
+                    const totalTime = servicesWithDuration.reduce((sum, s) => sum + (s.serviceDuration || 0), 0)
+                    const todayServicesWithDuration = stats.recentServices.filter(s => {
+                      const serviceDate = new Date(s.createdAt).toDateString()
+                      const today = new Date().toDateString()
+                      return serviceDate === today && s.serviceDuration !== null && s.serviceDuration !== undefined
+                    })
+                    const todayTotalTime = todayServicesWithDuration.reduce((sum, s) => sum + (s.serviceDuration || 0), 0)
+                    
+                    return (
+                      <>
+                        <div className="bg-white rounded-lg p-4">
+                          <p className="text-xs text-gray-600 mb-1">Tiempo Promedio por Servicio</p>
+                          <p className="text-lg font-bold text-blue-600">
+                            {avgDuration > 0 ? `${Math.floor(avgDuration / 60)}:${(avgDuration % 60).toString().padStart(2, '0')}` : 'N/A'}
+                          </p>
+                          <p className="text-xs text-gray-500">últimos servicios</p>
+                        </div>
+                        
+                        <div className="bg-white rounded-lg p-4">
+                          <p className="text-xs text-gray-600 mb-1">Tiempo Total Hoy</p>
+                          <p className="text-lg font-bold text-green-600">
+                            {todayTotalTime > 0 ? `${Math.floor(todayTotalTime / 60)}:${(todayTotalTime % 60).toString().padStart(2, '0')}` : '0:00'}
+                          </p>
+                          <p className="text-xs text-gray-500">minutos trabajados</p>
+                        </div>
+                        
+                        <div className="bg-white rounded-lg p-4">
+                          <p className="text-xs text-gray-600 mb-1">Servicios con Tiempo Registrado</p>
+                          <p className="text-lg font-bold text-purple-600">
+                            {servicesWithDuration.length}
+                          </p>
+                          <p className="text-xs text-gray-500">de {stats.recentServices.length} recientes</p>
+                        </div>
+                      </>
+                    )
+                  })()}
                 </div>
-              )}
+              </div>
 
               {/* Recent Services */}
               <div className="bg-white rounded-xl shadow-sm border">
@@ -312,6 +337,11 @@ export default function BarberDashboard() {
                             <p className="font-semibold text-gray-900">
                               ${service.amount.toLocaleString()}
                             </p>
+                            {service.tip > 0 && (
+                              <p className="text-sm text-green-600 font-medium">
+                                +${service.tip.toLocaleString()} propina
+                              </p>
+                            )}
                             <p className="text-sm text-gray-500 capitalize">
                               {service.method.toLowerCase()}
                             </p>

@@ -13,6 +13,10 @@ interface Payment {
   tip: number
   method: string
   createdAt: string
+  // Datos históricos guardados en el pago (valores al momento del pago)
+  servicePrice?: number | null
+  commissionRate?: number | null
+  isServiceCut?: boolean | null
   barber: {
     id: string
     name: string
@@ -22,6 +26,8 @@ interface Payment {
     id: string
     name: string
     duration: number
+    isServiceCut?: boolean
+    barberCommissionRate?: number | null
   }
   client?: {
     name: string
@@ -55,6 +61,11 @@ interface BarberSummary {
   totalTips: number
   commission: number
   toPay: number
+  serviceDetails: Array<{
+    amount: number
+    commissionRate: number
+    isServiceCut?: boolean
+  }>
 }
 
 export function WeeklyClosing() {
@@ -94,23 +105,21 @@ export function WeeklyClosing() {
     setWeekDays(days)
 
     fetchWeeklyData(monday.toISOString(), sunday.toISOString())
-    
-    // Auto-refresh cada 30 segundos
-    const interval = setInterval(() => {
-      console.log('🔄 Auto-refresh: Recargando cierre semanal...')
-      fetchWeeklyData(monday.toISOString(), sunday.toISOString())
-    }, 30000)
-    
-    return () => clearInterval(interval)
   }, [])
 
   const fetchWeeklyData = async (start: string, end: string) => {
     try {
       setLoading(true)
       
-      // Obtener TODOS los pagos y filtrar en el cliente por fecha local
-      const paymentsRes = await fetch(`/api/payments`)
-      const allPayments = await paymentsRes.json()
+          // Obtener TODOS los pagos y filtrar en el cliente por fecha local
+          const paymentsRes = await fetch(`/api/payments`, {
+            cache: 'no-store',
+            headers: {
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+              'Pragma': 'no-cache'
+            }
+          })
+          const allPayments = await paymentsRes.json()
       
       // Filtrar por semana comparando fechas en hora local
       const startDate = new Date(start)
@@ -136,25 +145,71 @@ export function WeeklyClosing() {
           barberMap.set(barberId, {
             barberId,
             barberName: payment.barber.name,
-            commissionRate: payment.barber.commissionRate,
+            commissionRate: payment.barber.commissionRate, // Comisión por defecto del barbero
             totalServices: 0,
             totalRevenue: 0,
             totalTips: 0,
             commission: 0,
-            toPay: 0
+            toPay: 0,
+            serviceDetails: []
           })
         }
 
         const summary = barberMap.get(barberId)!
         summary.totalServices += 1
-        summary.totalRevenue += payment.amount
+        
+        // IMPORTANTE: Usar SIEMPRE los datos históricos guardados en el pago
+        // Los datos guardados reflejan el estado del servicio en el momento del pago
+        // NO usar el estado actual del servicio, solo los datos guardados en el pago
+        const paymentData = payment as any
+        // Si isServiceCut está guardado (true o false), usar ESE valor
+        // Si es null/undefined, significa que es un pago antiguo anterior al fix, usar false
+        const isServiceCut = paymentData.isServiceCut !== null && paymentData.isServiceCut !== undefined
+          ? Boolean(paymentData.isServiceCut) // Usar el valor guardado en el pago
+          : false // Pagos antiguos sin datos históricos no eran cortes de servicio
+        // Para la comisión, si está guardada usarla, sino usar la del servicio actual
+        const serviceCommissionRate = paymentData.commissionRate !== null && paymentData.commissionRate !== undefined
+          ? paymentData.commissionRate
+          : (payment.service.barberCommissionRate ?? payment.barber.commissionRate)
+        
+        // Usar el precio histórico guardado si está disponible, sino usar amount actual
+        // Esto asegura que los cálculos usen el precio real del momento del pago
+        const paymentAmount = paymentData.servicePrice !== null && paymentData.servicePrice !== undefined
+          ? paymentData.servicePrice
+          : payment.amount
+        
+        // Solo sumar a ingresos si NO es corte de servicio
+        // Los cortes de servicio NO suman a ingresos de la barbería
+        if (!isServiceCut) {
+          summary.totalRevenue += paymentAmount
+        }
+        
         summary.totalTips += payment.tip || 0
+        
+        // Calcular comisión individual de este pago usando los datos históricos
+        // IMPORTANTE: Los cortes de servicio SÍ generan comisión para el barbero
+        const paymentCommission = (paymentAmount * serviceCommissionRate) / 100
+        summary.commission += paymentCommission
+        
+        // Guardar detalles del servicio para mostrar la comisión correcta
+        summary.serviceDetails.push({
+          amount: paymentAmount,
+          commissionRate: serviceCommissionRate,
+          isServiceCut: isServiceCut,
+          serviceId: payment.serviceId
+        })
+        
+        if (isServiceCut) {
+          console.log(`💰 Corte de Servicio: $${paymentAmount} | Servicio: ${payment.service.name} | Comisión servicio: ${serviceCommissionRate}% | Comisión calculada: $${paymentCommission.toFixed(2)} | NO suma a ingresos`)
+        } else {
+          console.log(`💰 Pago: $${paymentAmount} | Servicio: ${payment.service.name} | Comisión servicio: ${serviceCommissionRate}% | Comisión calculada: $${paymentCommission.toFixed(2)}`)
+        }
       })
 
-      // Calcular comisiones y totales a pagar
+      // Calcular totales a pagar
       const summaries = Array.from(barberMap.values()).map(summary => {
-        summary.commission = (summary.totalRevenue * summary.commissionRate) / 100
         summary.toPay = summary.commission + summary.totalTips
+        console.log(`📊 Resumen ${summary.barberName}: Ingresos $${summary.totalRevenue} | Comisión total $${summary.commission.toFixed(2)} | Propinas $${summary.totalTips} | Total a pagar $${summary.toPay.toFixed(2)}`)
         return summary
       })
 
@@ -251,12 +306,39 @@ export function WeeklyClosing() {
   }
 
   const totalToPay = barberSummaries.reduce((sum, s) => sum + s.toPay, 0)
+  // totalRevenue ya excluye cortes de servicio (se calcula en el resumen por barbero)
   const totalRevenue = barberSummaries.reduce((sum, s) => sum + s.totalRevenue, 0)
   const totalServices = barberSummaries.reduce((sum, s) => sum + s.totalServices, 0)
   const totalTips = barberSummaries.reduce((sum, s) => sum + s.totalTips, 0)
+  
+  // Contar servicios que NO son cortes de servicio para el display
+  // Usar SIEMPRE los datos históricos guardados en el pago
+  const regularServices = payments.filter(p => {
+    const paymentData = p as any
+    const isServiceCut = paymentData.isServiceCut !== null && paymentData.isServiceCut !== undefined
+      ? Boolean(paymentData.isServiceCut)
+      : false // Pagos antiguos sin datos históricos no eran cortes de servicio
+    return !isServiceCut
+  }).length
+  const serviceCuts = payments.filter(p => {
+    const paymentData = p as any
+    const isServiceCut = paymentData.isServiceCut !== null && paymentData.isServiceCut !== undefined
+      ? Boolean(paymentData.isServiceCut)
+      : false
+    return isServiceCut
+  }).length
 
   const dayPayments = getDayPayments(selectedDay)
-  const dayTotal = dayPayments.reduce((sum, p) => sum + p.total, 0)
+  // Excluir cortes de servicio del total del día
+  const dayTotal = dayPayments.filter(p => {
+    const payment = payments.find(pm => pm.id === p.id)
+    if (!payment) return false
+    const paymentData = payment as any
+    const isServiceCut = paymentData.isServiceCut !== null && paymentData.isServiceCut !== undefined
+      ? Boolean(paymentData.isServiceCut)
+      : false
+    return !isServiceCut
+  }).reduce((sum, p) => sum + p.total, 0)
 
   return (
     <div className="space-y-6">
@@ -305,6 +387,11 @@ export function WeeklyClosing() {
             <div>
               <p className="text-sm text-blue-600 font-medium">Total Servicios</p>
               <p className="text-3xl font-bold text-blue-900">{totalServices}</p>
+              {serviceCuts > 0 && (
+                <p className="text-xs text-blue-500 mt-1">
+                  {regularServices} regulares + {serviceCuts} corte{serviceCuts > 1 ? 's' : ''} de servicio
+                </p>
+              )}
             </div>
             <Scissors className="w-8 h-8 text-blue-600" />
           </div>
@@ -315,8 +402,13 @@ export function WeeklyClosing() {
             <div>
               <p className="text-sm text-green-600 font-medium">Ingresos Totales</p>
               <p className="text-3xl font-bold text-green-900">${totalRevenue.toLocaleString()}</p>
+              {serviceCuts > 0 && (
+                <p className="text-xs text-green-600 mt-1">
+                  Excluye {serviceCuts} corte{serviceCuts > 1 ? 's' : ''} de servicio
+                </p>
+              )}
             </div>
-            <TrendingUp className="w-8 h-8 text-green-600" />
+            <DollarSign className="w-8 h-8 text-green-600" />
           </div>
         </div>
 
@@ -527,7 +619,6 @@ export function WeeklyClosing() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Barbero</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Servicios</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ingresos</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">% Com.</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Comisión</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Propinas</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total a Pagar</th>
@@ -544,8 +635,14 @@ export function WeeklyClosing() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-gray-900">{summary.totalServices}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-gray-900">${summary.totalRevenue.toLocaleString()}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-gray-900">{summary.commissionRate}%</td>
-                    <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">${summary.commission.toLocaleString()}</td>
+                    <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
+                      ${summary.commission.toLocaleString()}
+                      {summary.serviceDetails.some(s => s.isServiceCut) && (
+                        <span className="ml-1 text-xs text-green-600" title="Incluye cortes de servicio con comisión">
+                          *
+                        </span>
+                      )}
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-green-600 font-medium">
                       ${summary.totalTips.toLocaleString()}
                     </td>
@@ -562,7 +659,6 @@ export function WeeklyClosing() {
                   <td className="px-6 py-4 text-gray-900">TOTAL GENERAL</td>
                   <td className="px-6 py-4 text-gray-900">{totalServices}</td>
                   <td className="px-6 py-4 text-gray-900">${totalRevenue.toLocaleString()}</td>
-                  <td className="px-6 py-4 text-gray-900">-</td>
                   <td className="px-6 py-4 text-gray-900">${barberSummaries.reduce((sum, s) => sum + s.commission, 0).toLocaleString()}</td>
                   <td className="px-6 py-4 text-green-600">${totalTips.toLocaleString()}</td>
                   <td className="px-6 py-4 text-purple-600 text-lg">${totalToPay.toLocaleString()}</td>

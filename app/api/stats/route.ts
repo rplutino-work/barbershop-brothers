@@ -23,49 +23,60 @@ export async function GET() {
       where: { isActive: true }
     })
 
-    // Obtener todos los pagos completados
+    // Obtener todos los pagos completados con servicio para filtrar cortes de servicio
+    // Usar datos históricos guardados en el pago si existen
     const allPayments = await prisma.payment.findMany({
       where: {
         status: 'COMPLETED'
       },
-      select: {
-        id: true,
-        amount: true,
-        createdAt: true
+      include: {
+        service: true
       }
     })
 
-    // Filtrar por hoy comparando strings de fecha
+    // Filtrar por hoy comparando strings de fecha y excluir cortes de servicio
+    // Usar SIEMPRE los datos históricos guardados en el pago
     const todayStr = now.toLocaleDateString('es-AR')
     const todayPayments = allPayments.filter(p => {
       const paymentDate = new Date(p.createdAt)
-      return paymentDate.toLocaleDateString('es-AR') === todayStr
+      const paymentData = p as any
+      // Usar SIEMPRE los datos históricos guardados en el pago
+      // NO usar el estado actual del servicio, solo los datos guardados
+      const isServiceCut = paymentData.isServiceCut !== null && paymentData.isServiceCut !== undefined
+        ? Boolean(paymentData.isServiceCut) // Usar el valor guardado en el pago
+        : false // Pagos antiguos sin datos históricos no eran cortes de servicio
+      return paymentDate.toLocaleDateString('es-AR') === todayStr && !isServiceCut
     })
 
-    // Ingresos HOY
+    // Ingresos HOY (excluyendo cortes de servicio)
     const todayRevenue = {
       _sum: {
         amount: todayPayments.reduce((sum, p) => sum + p.amount, 0)
       }
     }
 
-    const weekRevenue = await prisma.payment.aggregate({
+    // Obtener todos los pagos de la semana y mes con servicio para filtrar
+    const weekPayments = await prisma.payment.findMany({
       where: {
         createdAt: { gte: startOfWeek },
         status: 'COMPLETED'
       },
-      _sum: { amount: true }
+      include: {
+        service: true
+      }
     })
 
-    const monthRevenue = await prisma.payment.aggregate({
+    const monthPayments = await prisma.payment.findMany({
       where: {
         createdAt: { gte: startOfMonth },
         status: 'COMPLETED'
       },
-      _sum: { amount: true }
+      include: {
+        service: true
+      }
     })
 
-    const lastMonthRevenue = await prisma.payment.aggregate({
+    const lastMonthPayments = await prisma.payment.findMany({
       where: {
         createdAt: { 
           gte: startOfLastMonth,
@@ -73,37 +84,96 @@ export async function GET() {
         },
         status: 'COMPLETED'
       },
-      _sum: { amount: true }
+      include: {
+        service: true
+      }
     })
 
-    // Cantidad de servicios HOY (ya filtrado arriba)
+    // Función helper para determinar si un pago es un corte de servicio
+    const getIsServiceCut = (p: any) => {
+      // Usar SIEMPRE los datos históricos guardados en el pago
+      // NO usar el estado actual del servicio, solo los datos guardados
+      return p.isServiceCut !== null && p.isServiceCut !== undefined
+        ? Boolean(p.isServiceCut) // Usar el valor guardado en el pago
+        : false // Pagos antiguos sin datos históricos no eran cortes de servicio
+    }
+
+    // Calcular ingresos excluyendo cortes de servicio
+    // Usar datos históricos guardados en el pago si existen
+    const weekRevenue = {
+      _sum: {
+        amount: weekPayments
+          .filter(p => !getIsServiceCut(p))
+          .reduce((sum, p) => sum + p.amount, 0)
+      }
+    }
+
+    const monthRevenue = {
+      _sum: {
+        amount: monthPayments
+          .filter(p => !getIsServiceCut(p))
+          .reduce((sum, p) => sum + p.amount, 0)
+      }
+    }
+
+    const lastMonthRevenue = {
+      _sum: {
+        amount: lastMonthPayments
+          .filter(p => !getIsServiceCut(p))
+          .reduce((sum, p) => sum + p.amount, 0)
+      }
+    }
+
+    // Cantidad de servicios HOY (ya filtrado arriba, excluyendo cortes de servicio)
     const todayServices = todayPayments.length
 
-    const weekServices = await prisma.payment.count({
-      where: {
-        createdAt: { gte: startOfWeek },
-        status: 'COMPLETED'
-      }
-    })
+    const weekServices = weekPayments.filter(p => !getIsServiceCut(p)).length
 
-    const monthServices = await prisma.payment.count({
-      where: {
-        createdAt: { gte: startOfMonth },
-        status: 'COMPLETED'
-      }
-    })
+    const monthServices = monthPayments.filter(p => !getIsServiceCut(p)).length
 
-    // Estadísticas por barbero (semanal)
-    const barberStats = await prisma.payment.groupBy({
-      by: ['barberId'],
+    // Estadísticas por barbero (semanal) - excluyendo cortes de servicio de ingresos
+    const barberStatsData = await prisma.payment.findMany({
       where: {
         createdAt: { gte: startOfWeek },
         status: 'COMPLETED'
       },
-      _count: { id: true },
-      _sum: { amount: true },
-      _avg: { amount: true }
+      include: {
+        barber: {
+          select: {
+            id: true,
+            name: true
+          }
+        },
+        service: true
+      }
     })
+
+    // Agrupar por barbero excluyendo cortes de servicio de ingresos
+    const barberStatsMap = new Map<string, { count: number; total: number; amounts: number[] }>()
+    barberStatsData.forEach(payment => {
+      if (!barberStatsMap.has(payment.barberId)) {
+        barberStatsMap.set(payment.barberId, { count: 0, total: 0, amounts: [] })
+      }
+      const stat = barberStatsMap.get(payment.barberId)!
+      stat.count += 1
+      // Solo sumar ingresos si NO es corte de servicio
+      // Usar SIEMPRE los datos históricos guardados en el pago
+      const paymentData = payment as any
+      const isServiceCut = paymentData.isServiceCut !== null && paymentData.isServiceCut !== undefined
+        ? Boolean(paymentData.isServiceCut) // Usar el valor guardado en el pago
+        : false // Pagos antiguos sin datos históricos no eran cortes de servicio
+      if (!isServiceCut) {
+        stat.total += payment.amount
+      }
+      stat.amounts.push(payment.amount)
+    })
+
+    const barberStats = Array.from(barberStatsMap.entries()).map(([barberId, stat]) => ({
+      barberId,
+      _count: { id: stat.count },
+      _sum: { amount: stat.total },
+      _avg: { amount: stat.amounts.length > 0 ? stat.amounts.reduce((a, b) => a + b, 0) / stat.amounts.length : 0 }
+    }))
 
     // Obtener nombres de barberos
     const barberIds = barberStats.map(stat => stat.barberId)
@@ -160,6 +230,12 @@ export async function GET() {
         method: payment.method,
         createdAt: payment.createdAt
       }))
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
     })
   } catch (error: any) {
     console.error('Error al obtener estadísticas:', error)

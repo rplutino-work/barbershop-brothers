@@ -11,6 +11,8 @@ interface Service {
   duration: number
   description?: string
   isActive: boolean
+  isServiceCut?: boolean
+  barberCommissionRate?: number | null
 }
 
 export function ServiceManagement() {
@@ -23,6 +25,8 @@ export function ServiceManagement() {
     price: '',
     duration: '30',
     description: '',
+    isServiceCut: false,
+    barberCommissionRate: '50',
   })
 
   useEffect(() => {
@@ -61,7 +65,7 @@ export function ServiceManagement() {
         await fetchServices()
         setShowModal(false)
         setEditingService(null)
-        setFormData({ name: '', price: '', duration: '30', description: '' })
+        setFormData({ name: '', price: '', duration: '30', description: '', isServiceCut: false, barberCommissionRate: '50' })
       }
     } catch (error: any) {
       console.error('Error al guardar servicio:', error)
@@ -75,6 +79,8 @@ export function ServiceManagement() {
       price: service.price.toString(),
       duration: service.duration.toString(),
       description: service.description || '',
+      isServiceCut: service.isServiceCut || false,
+      barberCommissionRate: service.barberCommissionRate?.toString() || '50',
     })
     setShowModal(true)
   }
@@ -117,7 +123,7 @@ export function ServiceManagement() {
         <button
           onClick={() => {
             setEditingService(null)
-            setFormData({ name: '', price: '', duration: '30', description: '' })
+            setFormData({ name: '', price: '', duration: '30', description: '', isServiceCut: false, barberCommissionRate: '50' })
             setShowModal(true)
           }}
           className="bg-primary-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-primary-700 transition-colors"
@@ -158,6 +164,11 @@ export function ServiceManagement() {
             
             <h3 className="text-xl font-semibold text-gray-900 mb-2">
               {service.name}
+              {service.isServiceCut && (
+                <span className="ml-2 px-2 py-1 text-xs font-semibold bg-green-100 text-green-800 rounded">
+                  Corte de Servicio
+                </span>
+              )}
             </h3>
             
             <div className="space-y-2">
@@ -175,6 +186,16 @@ export function ServiceManagement() {
                 </span>
               </div>
               
+              <div className="text-sm text-gray-600">
+                <span className="font-semibold">Comisión barbero:</span> {service.barberCommissionRate || 50}%
+              </div>
+              
+              {service.isServiceCut && (
+                <div className="text-xs text-green-700 bg-green-50 px-2 py-1 rounded mt-2">
+                  ℹ️ No suma a ingresos de barbería, solo al barbero
+                </div>
+              )}
+              
               {service.description && (
                 <p className="text-sm text-gray-500 mt-2">
                   {service.description}
@@ -187,17 +208,20 @@ export function ServiceManagement() {
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-white rounded-xl p-6 w-full max-w-md mx-4"
+            className="bg-white rounded-xl w-full max-w-md mx-4 flex flex-col max-h-[90vh]"
           >
-            <h3 className="text-lg font-semibold mb-4">
-              {editingService ? 'Editar Servicio' : 'Agregar Servicio'}
-            </h3>
+            <div className="p-6 border-b border-gray-200 flex-shrink-0">
+              <h3 className="text-lg font-semibold">
+                {editingService ? 'Editar Servicio' : 'Agregar Servicio'}
+              </h3>
+            </div>
             
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+              <div className="overflow-y-auto p-6 space-y-4 flex-1">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Nombre del Servicio
@@ -249,7 +273,47 @@ export function ServiceManagement() {
                 />
               </div>
               
-              <div className="flex justify-end space-x-3 pt-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Comisión del Barbero (%)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={formData.barberCommissionRate}
+                  onChange={(e) => setFormData({ ...formData, barberCommissionRate: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  placeholder="50"
+                  required
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Porcentaje que se lleva el barbero de este servicio
+                </p>
+              </div>
+              
+              <div className="flex items-center space-x-2 pt-2">
+                <input
+                  type="checkbox"
+                  id="isServiceCut"
+                  checked={formData.isServiceCut}
+                  onChange={(e) => setFormData({ ...formData, isServiceCut: e.target.checked })}
+                  className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                />
+                <label htmlFor="isServiceCut" className="text-sm font-medium text-gray-700">
+                  Corte de Servicio (la barbería paga al barbero, no cuenta como ingreso)
+                </label>
+              </div>
+              
+              {formData.isServiceCut && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-800">
+                  <p className="font-semibold mb-1">ℹ️ Servicio Especial</p>
+                  <p>Este servicio NO sumará a los ingresos de la barbería en el dashboard, pero SÍ se pagará al barbero según su comisión configurada.</p>
+                </div>
+              )}
+              </div>
+              
+              <div className="flex justify-end space-x-3 p-6 border-t border-gray-200 flex-shrink-0 bg-gray-50">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}

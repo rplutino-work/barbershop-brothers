@@ -4,8 +4,8 @@ import { useEffect } from 'react'
 
 export function PWAInstaller() {
   useEffect(() => {
-    // Registrar Service Worker
-    if ('serviceWorker' in navigator) {
+    // NO registrar Service Worker en desarrollo (solo en producción)
+    if (process.env.NODE_ENV === 'production' && 'serviceWorker' in navigator) {
       navigator.serviceWorker
         .register('/sw.js')
         .then((registration) => {
@@ -14,6 +14,16 @@ export function PWAInstaller() {
         .catch((error) => {
           console.log('Error al registrar Service Worker:', error)
         })
+    } else if (process.env.NODE_ENV === 'development') {
+      // Desregistrar service worker en desarrollo si existe
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then((registrations) => {
+          registrations.forEach((registration) => {
+            registration.unregister()
+            console.log('🔧 Service Worker desregistrado en desarrollo')
+          })
+        })
+      }
     }
 
     // Detectar evento de instalación PWA

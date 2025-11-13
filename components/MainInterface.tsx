@@ -426,10 +426,11 @@ export function MainInterface({ onStartRegistration }: MainInterfaceProps) {
                           <DollarSign className="w-5 h-5 text-white" />
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-gray-600">Hoy</p>
+                          <p className="text-sm font-medium text-gray-600">Ganancia Hoy</p>
                           <p className="text-lg font-bold text-gray-900">
-                            ${selectedBarberStats.todayRevenue?.toLocaleString() || 0}
+                            ${(selectedBarberStats.todayEarnings || 0).toLocaleString()}
                           </p>
+                          <p className="text-xs text-gray-500">(comisión + propinas)</p>
                         </div>
                       </div>
                       <div className="text-right">
@@ -446,10 +447,11 @@ export function MainInterface({ onStartRegistration }: MainInterfaceProps) {
                           <TrendingUp className="w-5 h-5 text-white" />
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-gray-600">Esta Semana</p>
+                          <p className="text-sm font-medium text-gray-600">Ganancia Semana</p>
                           <p className="text-lg font-bold text-gray-900">
-                            ${selectedBarberStats.weekRevenue?.toLocaleString() || 0}
+                            ${(selectedBarberStats.weekEarnings || 0).toLocaleString()}
                           </p>
+                          <p className="text-xs text-gray-500">(comisión + propinas)</p>
                         </div>
                       </div>
                       <div className="text-right">
@@ -466,10 +468,11 @@ export function MainInterface({ onStartRegistration }: MainInterfaceProps) {
                           <Calendar className="w-5 h-5 text-white" />
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-gray-600">Este Mes</p>
+                          <p className="text-sm font-medium text-gray-600">Ganancia Mes</p>
                           <p className="text-lg font-bold text-gray-900">
-                            ${selectedBarberStats.monthRevenue?.toLocaleString() || 0}
+                            ${(selectedBarberStats.monthEarnings || 0).toLocaleString()}
                           </p>
+                          <p className="text-xs text-gray-500">(comisión + propinas)</p>
                         </div>
                       </div>
                       <div className="text-right">
@@ -485,49 +488,61 @@ export function MainInterface({ onStartRegistration }: MainInterfaceProps) {
                           <Clock className="w-5 h-5 text-white" />
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-gray-600">Promedio por Servicio</p>
+                          <p className="text-sm font-medium text-gray-600">Promedio Ganancia/Servicio</p>
                           <p className="text-lg font-bold text-gray-900">
-                            ${selectedBarberStats.averageService?.toLocaleString() || 0}
+                            ${(selectedBarberStats.averageEarnings || 0).toLocaleString()}
                           </p>
+                          <p className="text-xs text-gray-500">(últimos 30 días)</p>
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* Comisión y ganancias reales */}
+                  {/* Estadísticas de tiempo */}
                   <div className="mt-6 pt-6 border-t border-gray-200">
-                    <div className="bg-gradient-to-r from-primary-50 to-primary-100 rounded-xl p-4">
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium text-gray-700">Comisión del Barbero:</span>
-                          <span className="text-lg font-bold text-primary-700">
-                            {selectedBarberStats.barber?.commissionRate || 50}%
-                          </span>
-                        </div>
-                        
-                        <div className="h-px bg-primary-200"></div>
-                        
-                        <div>
-                          <p className="text-xs text-gray-600 mb-2">Tu ganancia real del mes:</p>
-                          <p className="text-2xl font-bold text-primary-600">
-                            ${Math.round((selectedBarberStats.monthRevenue || 0) * ((selectedBarberStats.barber?.commissionRate || 50) / 100)).toLocaleString()}
-                          </p>
-                        </div>
-                        
-                        <div className="grid grid-cols-2 gap-3 pt-2">
-                          <div>
-                            <p className="text-xs text-gray-600">Ganancia Hoy:</p>
-                            <p className="text-sm font-semibold text-gray-900">
-                              ${Math.round((selectedBarberStats.todayRevenue || 0) * ((selectedBarberStats.barber?.commissionRate || 50) / 100)).toLocaleString()}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-gray-600">Ganancia Semana:</p>
-                            <p className="text-sm font-semibold text-gray-900">
-                              ${Math.round((selectedBarberStats.weekRevenue || 0) * ((selectedBarberStats.barber?.commissionRate || 50) / 100)).toLocaleString()}
-                            </p>
-                          </div>
-                        </div>
+                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4">
+                      <h3 className="text-sm font-semibold text-gray-900 mb-3">
+                        ⏱️ Estadísticas de Tiempo
+                      </h3>
+                      <div className="grid grid-cols-2 gap-3">
+                        {(() => {
+                          // Obtener servicios recientes del API o calcular desde las estadísticas
+                          const recentServices = selectedBarberStats.recentServices || []
+                          const servicesWithDuration = recentServices.filter((s: any) => 
+                            s.serviceDuration !== null && s.serviceDuration !== undefined
+                          )
+                          
+                          const avgDuration = servicesWithDuration.length > 0
+                            ? servicesWithDuration.reduce((sum: number, s: any) => sum + (s.serviceDuration || 0), 0) / servicesWithDuration.length
+                            : 0
+                          
+                          const todayServicesWithDuration = recentServices.filter((s: any) => {
+                            const serviceDate = new Date(s.createdAt).toDateString()
+                            const today = new Date().toDateString()
+                            return serviceDate === today && s.serviceDuration !== null && s.serviceDuration !== undefined
+                          })
+                          const todayTotalTime = todayServicesWithDuration.reduce((sum: number, s: any) => sum + (s.serviceDuration || 0), 0)
+                          
+                          return (
+                            <>
+                              <div className="bg-white rounded-lg p-3">
+                                <p className="text-xs text-gray-600 mb-1">Tiempo Promedio</p>
+                                <p className="text-sm font-bold text-blue-600">
+                                  {avgDuration > 0 ? `${Math.floor(avgDuration / 60)}:${(avgDuration % 60).toString().padStart(2, '0')}` : 'N/A'}
+                                </p>
+                                <p className="text-xs text-gray-500">por servicio</p>
+                              </div>
+                              
+                              <div className="bg-white rounded-lg p-3">
+                                <p className="text-xs text-gray-600 mb-1">Tiempo Total Hoy</p>
+                                <p className="text-sm font-bold text-green-600">
+                                  {todayTotalTime > 0 ? `${Math.floor(todayTotalTime / 60)}:${(todayTotalTime % 60).toString().padStart(2, '0')}` : '0:00'}
+                                </p>
+                                <p className="text-xs text-gray-500">minutos</p>
+                              </div>
+                            </>
+                          )
+                        })()}
                       </div>
                     </div>
                   </div>

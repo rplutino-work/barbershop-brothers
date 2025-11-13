@@ -33,14 +33,16 @@ model User {
 }
 
 model Service {
-  id          String   @id @default(cuid())
-  name        String
-  price       Float
-  duration    Int      @default(30) // in minutes
-  description String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                  String   @id @default(cuid())
+  name                String
+  price               Float
+  duration            Int      @default(30) // in minutes
+  description         String?
+  isActive            Boolean  @default(true)
+  isServiceCut        Boolean  @default(false) // Si es un "Corte de servicio" (no suma a ingresos de barbería)
+  barberCommissionRate Float?  // Porcentaje que se lleva el barbero de este servicio (override del commissionRate del barbero)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
   // Relations
   payments    Payment[]
@@ -76,6 +78,11 @@ model Payment {
   serviceStartTime DateTime? // Hora de inicio del corte
   serviceEndTime   DateTime? // Hora de fin del corte
   serviceDuration  Int?      // Duración en segundos
+  
+  // Datos históricos del servicio al momento del pago
+  servicePrice      Float?   // Precio del servicio en el momento del pago
+  commissionRate    Float?   // Comisión aplicada en el momento del pago (%)
+  isServiceCut      Boolean? @default(false) // Si era un corte de servicio en el momento del pago
   
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

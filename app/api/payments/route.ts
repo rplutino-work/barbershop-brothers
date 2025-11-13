@@ -12,6 +12,33 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Obtener datos del servicio y barbero para guardar valores históricos
+    const service = await prisma.service.findUnique({
+      where: { id: serviceId },
+      select: {
+        price: true,
+        isServiceCut: true,
+        barberCommissionRate: true,
+      },
+    })
+
+    const barber = await prisma.user.findUnique({
+      where: { id: barberId },
+      select: {
+        commissionRate: true,
+      },
+    })
+
+    if (!service || !barber) {
+      return NextResponse.json(
+        { error: 'Servicio o barbero no encontrado' },
+        { status: 404 }
+      )
+    }
+
+    // Calcular comisión que se aplicará (usar la del servicio si existe, sino la del barbero)
+    const commissionRate = service.barberCommissionRate ?? barber.commissionRate
+
     // Calcular serviceEndTime si tenemos startTime y duration
     let serviceEndTime = null
     if (serviceStartTime && serviceDuration) {
@@ -32,6 +59,10 @@ export async function POST(request: NextRequest) {
         serviceStartTime: serviceStartTime ? new Date(serviceStartTime) : null,
         serviceEndTime: serviceEndTime,
         serviceDuration: serviceDuration || null,
+        // Datos históricos del servicio al momento del pago
+        servicePrice: service.price,
+        commissionRate: commissionRate,
+        isServiceCut: service.isServiceCut,
       },
       include: {
         barber: true,
@@ -82,8 +113,27 @@ export async function GET(request: NextRequest) {
     const payments = await prisma.payment.findMany({
       where: whereClause,
       include: {
-        barber: true,
-        service: true,
+        barber: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            commissionRate: true,
+            imageUrl: true,
+          },
+        },
+        service: {
+          select: {
+            id: true,
+            name: true,
+            price: true,
+            duration: true,
+            description: true,
+            isServiceCut: true,
+            barberCommissionRate: true,
+          },
+        },
         client: true,
       },
       orderBy: {

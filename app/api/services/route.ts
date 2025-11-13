@@ -10,6 +10,19 @@ export async function GET() {
       orderBy: {
         name: 'asc',
       },
+      // Incluir todos los campos
+      select: {
+        id: true,
+        name: true,
+        price: true,
+        duration: true,
+        description: true,
+        isActive: true,
+        isServiceCut: true,
+        barberCommissionRate: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     })
 
     return NextResponse.json(services)
@@ -24,7 +37,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const { name, price, duration = 30, description } = await request.json()
+    const { name, price, duration = 30, description, isServiceCut = false, barberCommissionRate = 50 } = await request.json()
 
     if (!name || !price) {
       return NextResponse.json(
@@ -39,6 +52,8 @@ export async function POST(request: NextRequest) {
         price: parseFloat(price),
         duration: parseInt(duration),
         description,
+        isServiceCut: Boolean(isServiceCut),
+        barberCommissionRate: barberCommissionRate ? parseFloat(barberCommissionRate) : 50,
       },
     })
 

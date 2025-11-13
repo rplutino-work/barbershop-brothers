@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     sunday.setDate(monday.getDate() + 6)
     sunday.setHours(23, 59, 59, 999)
 
-    // Obtener todos los pagos de la semana
+    // Obtener todos los pagos de la semana con servicio y barbero
     const payments = await prisma.payment.findMany({
       where: {
         createdAt: {
@@ -28,6 +28,7 @@ export async function POST(request: NextRequest) {
       },
       include: {
         barber: true,
+        service: true,
       },
     })
 
@@ -37,7 +38,7 @@ export async function POST(request: NextRequest) {
       }, { status: 200 })
     }
 
-    // Agrupar por barbero
+    // Agrupar por barbero y calcular comisiones por servicio
     const barberMap = new Map<string, any>()
 
     payments.forEach((payment: any) => {
@@ -47,23 +48,45 @@ export async function POST(request: NextRequest) {
         barberMap.set(barberId, {
           barberId,
           barberName: payment.barber.name,
-          commissionRate: payment.barber.commissionRate,
+          commissionRate: payment.barber.commissionRate, // Comisión por defecto del barbero
           totalServices: 0,
           totalRevenue: 0,
           totalTips: 0,
+          totalCommission: 0, // Comisión total calculada por servicio
         })
       }
 
       const summary = barberMap.get(barberId)!
       summary.totalServices += 1
-      summary.totalRevenue += payment.amount
+      
+      // Usar SIEMPRE los datos históricos guardados en el pago
+      // Los datos guardados reflejan el estado del servicio en el momento del pago
+      // NO usar el estado actual del servicio, solo los datos guardados
+      const paymentData = payment as any
+      const isServiceCut = paymentData.isServiceCut !== null && paymentData.isServiceCut !== undefined
+        ? Boolean(paymentData.isServiceCut) // Usar el valor guardado en el pago
+        : false // Pagos antiguos sin datos históricos no eran cortes de servicio
+      const serviceCommissionRate = paymentData.commissionRate !== null && paymentData.commissionRate !== undefined
+        ? paymentData.commissionRate
+        : (payment.service.barberCommissionRate ?? payment.barber.commissionRate)
+      
+      // Solo sumar a ingresos si NO es corte de servicio
+      // Los cortes de servicio NO suman a ingresos de la barbería
+      if (!isServiceCut) {
+        summary.totalRevenue += payment.amount
+      }
+      
       summary.totalTips += (payment.tip || 0)
+      
+      // Calcular comisión individual usando los datos históricos guardados
+      // IMPORTANTE: Los cortes de servicio SÍ generan comisión para el barbero
+      const paymentCommission = (payment.amount * serviceCommissionRate) / 100
+      summary.totalCommission += paymentCommission
     })
 
     // Crear registros de cierre semanal
     const weeklyClosingsData = Array.from(barberMap.values()).map((summary) => {
-      const commission = (summary.totalRevenue * summary.commissionRate) / 100
-      const toPay = commission + summary.totalTips
+      const toPay = summary.totalCommission + summary.totalTips
 
       return {
         weekStart: monday,
@@ -72,7 +95,7 @@ export async function POST(request: NextRequest) {
         totalServices: summary.totalServices,
         totalRevenue: summary.totalRevenue,
         totalTips: summary.totalTips,
-        commission: toPay,
+        commission: summary.totalCommission, // Comisión calculada usando comisiones de servicios
         status: 'PENDING',
       }
     })

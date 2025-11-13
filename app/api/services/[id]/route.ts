@@ -6,7 +6,7 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { name, price, duration = 30, description } = await request.json()
+    const { name, price, duration = 30, description, isServiceCut = false, barberCommissionRate = 50 } = await request.json()
 
     if (!name || !price) {
       return NextResponse.json(
@@ -24,6 +24,8 @@ export async function PUT(
         price: parseFloat(price),
         duration: parseInt(duration),
         description,
+        isServiceCut: Boolean(isServiceCut),
+        barberCommissionRate: barberCommissionRate ? parseFloat(barberCommissionRate) : 50,
       },
     })
 

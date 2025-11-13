@@ -43,19 +43,53 @@ export function Dashboard() {
 
   const fetchDashboardStats = async () => {
     try {
-      const response = await fetch('/api/stats')
+      setLoading(true)
+      const response = await fetch('/api/stats', {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache'
+        }
+      })
       if (response.ok) {
         const data = await response.json()
+        console.log('✅ Dashboard stats recibidos:', data)
         setStats(data)
+      } else {
+        console.error('❌ Error en respuesta del API:', response.status, response.statusText)
+        const errorData = await response.json().catch(() => ({}))
+        console.error('❌ Detalles del error:', errorData)
       }
     } catch (error: any) {
-      console.error('Error al obtener estadísticas:', error)
+      console.error('❌ Error al obtener estadísticas:', error)
     } finally {
       setLoading(false)
     }
   }
 
-  if (!stats) return null
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-lg">Cargando estadísticas...</div>
+      </div>
+    )
+  }
+
+  if (!stats) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <p className="text-lg text-red-600 mb-2">Error al cargar estadísticas</p>
+          <button
+            onClick={fetchDashboardStats}
+            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+          >
+            Reintentar
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   const statCards = [
     {
@@ -95,14 +129,6 @@ export function Dashboard() {
       color: 'bg-indigo-500',
     },
   ]
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-lg">Cargando estadísticas...</div>
-      </div>
-    )
-  }
 
   return (
     <div className="space-y-6">
@@ -152,7 +178,8 @@ export function Dashboard() {
         </div>
         <div className="p-6">
           <div className="space-y-4">
-            {stats.barberStats.map((barber, index) => (
+            {stats.barberStats && stats.barberStats.length > 0 ? (
+              stats.barberStats.map((barber, index) => (
               <div key={barber.barberId} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                 <div className="flex items-center space-x-4">
                   <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
@@ -174,7 +201,10 @@ export function Dashboard() {
                   </p>
                 </div>
               </div>
-            ))}
+            ))
+            ) : (
+              <p className="text-gray-500 text-center py-4">No hay estadísticas de barberos esta semana</p>
+            )}
           </div>
         </div>
       </div>
@@ -188,7 +218,8 @@ export function Dashboard() {
         </div>
         <div className="p-6">
           <div className="space-y-4">
-            {stats.recentActivity.slice(0, 5).map((activity, index) => (
+            {stats.recentActivity && stats.recentActivity.length > 0 ? (
+              stats.recentActivity.slice(0, 5).map((activity, index) => (
               <div key={activity.id} className="flex items-center space-x-4">
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                 <div className="flex-1">
@@ -200,7 +231,10 @@ export function Dashboard() {
                   </p>
                 </div>
               </div>
-            ))}
+            ))
+            ) : (
+              <p className="text-gray-500 text-center py-4">No hay actividad reciente</p>
+            )}
           </div>
         </div>
       </div>

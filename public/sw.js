@@ -1,57 +1,43 @@
-// Service Worker para PWA - Versión actualizada
-const CACHE_NAME = 'barberia-elite-v2'
-const urlsToCache = [
-  '/',
-  '/offline.html'
-]
-
+// Service Worker para PWA - SIN CACHÉ
 self.addEventListener('install', (event) => {
-  console.log('[SW] Instalando nueva versión...')
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then((cache) => cache.addAll(urlsToCache))
-      .then(() => self.skipWaiting())
-  )
+  console.log('[SW] Instalando sin caché...')
+  self.skipWaiting()
 })
 
 self.addEventListener('activate', (event) => {
-  console.log('[SW] Activando nueva versión...')
+  console.log('[SW] Activando sin caché...')
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
-            console.log('[SW] Eliminando cache viejo:', cacheName)
-            return caches.delete(cacheName)
-          }
+          console.log('[SW] Eliminando cache:', cacheName)
+          return caches.delete(cacheName)
         })
       )
     }).then(() => clients.claim())
   )
 })
 
-// Estrategia: Network ONLY para API, Cache para assets estáticos
+// Estrategia: NUNCA cachear nada - siempre ir a la red
 self.addEventListener('fetch', (event) => {
-  const url = new URL(event.request.url)
-  
-  // NUNCA cachear llamadas a API
-  if (url.pathname.startsWith('/api/')) {
-    event.respondWith(
-      fetch(event.request, {
-        cache: 'no-store',
-        headers: {
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache'
-        }
-      })
-    )
+  // NO interceptar peticiones de autenticación - dejar que pasen directamente
+  if (event.request.url.includes('/api/auth')) {
     return
   }
   
-  // Para todo lo demás: Network first
+  // NO interceptar peticiones a la API en desarrollo
+  if (event.request.url.includes('/api/') && event.request.url.includes('localhost')) {
+    return
+  }
+  
   event.respondWith(
-    fetch(event.request)
-      .catch(() => caches.match(event.request))
+    fetch(event.request, {
+      cache: 'no-store',
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache'
+      }
+    })
   )
 })
 

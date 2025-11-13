@@ -35,14 +35,6 @@ export function DailyAppointments({ onBack }: DailyAppointmentsProps) {
 
   useEffect(() => {
     fetchAppointments()
-    
-    // Auto-refresh cada 30 segundos
-    const interval = setInterval(() => {
-      console.log('🔄 Auto-refresh: Recargando turnos del día...')
-      fetchAppointments()
-    }, 30000)
-    
-    return () => clearInterval(interval)
   }, [selectedDate])
 
   const fetchAppointments = async () => {
@@ -50,7 +42,13 @@ export function DailyAppointments({ onBack }: DailyAppointmentsProps) {
       setLoading(true)
       console.log('📅 Fetching appointments for date:', selectedDate)
       
-      const response = await fetch('/api/appointments')
+      const response = await fetch('/api/appointments', {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache'
+        }
+      })
       if (response.ok) {
         const data = await response.json()
         console.log('📋 All appointments received:', data)

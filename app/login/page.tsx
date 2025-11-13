@@ -29,18 +29,25 @@ export default function LoginPage() {
       })
 
       if (result?.error) {
-        setError('Credenciales inválidas')
-      } else {
+        setError('Credenciales inválidas. Verifica tu email y contraseña.')
+      } else if (result?.ok) {
+        // Esperar un momento para que la sesión se establezca
+        await new Promise(resolve => setTimeout(resolve, 200))
+        
         // Verificar el rol del usuario
         const session = await getSession()
+        
         if (session?.user?.role === 'ADMIN') {
           router.push('/admin')
         } else {
           router.push('/')
         }
+      } else {
+        setError('Error al iniciar sesión. Intenta nuevamente.')
       }
     } catch (error: any) {
-      setError('Error al iniciar sesión')
+      console.error('Error en login:', error)
+      setError('Error al iniciar sesión. Intenta nuevamente.')
     } finally {
       setLoading(false)
     }

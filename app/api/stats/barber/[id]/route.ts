@@ -19,50 +19,89 @@ export async function GET(
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0)
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
 
-    // Obtener todos los pagos y filtrar en el servidor por fecha local
+    // Obtener datos del barbero primero
+    const barber = await prisma.user.findUnique({
+      where: { id: params.id },
+      select: { id: true, name: true, commissionRate: true }
+    })
+
+    // Obtener todos los pagos con información del servicio para calcular comisiones correctas
     const allPayments = await prisma.payment.findMany({
       where: {
         barberId: params.id,
         status: 'COMPLETED'
       },
-      select: {
-        id: true,
-        amount: true,
-        createdAt: true
+      include: {
+        service: true,
       }
     })
 
-    // Filtrar por hoy comparando strings de fecha
+    // Filtrar por hoy comparando fechas en zona horaria de Argentina
     const todayStr = now.toLocaleDateString('es-AR')
+    console.log('📅 Fecha de hoy (AR):', todayStr)
     const todayPayments = allPayments.filter(p => {
       const paymentDate = new Date(p.createdAt)
-      return paymentDate.toLocaleDateString('es-AR') === todayStr
+      const paymentStr = paymentDate.toLocaleDateString('es-AR')
+      console.log(`🔍 Comparando: ${paymentStr} === ${todayStr} ? ${paymentStr === todayStr}`)
+      return paymentStr === todayStr
     })
+    console.log('📊 Pagos de hoy encontrados:', todayPayments.length)
 
-    // Ingresos del barbero HOY
-    const todayRevenue = {
-      _sum: {
-        amount: todayPayments.reduce((sum, p) => sum + p.amount, 0)
-      }
-    }
+    // Ganancias del barbero HOY (comisión + propinas) usando datos históricos guardados
+    const todayEarnings = todayPayments.reduce((sum, p) => {
+      // Usar comisión guardada en el pago (datos históricos), sino usar del servicio actual
+      const paymentData = p as any
+      const commissionRate = paymentData.commissionRate !== null && paymentData.commissionRate !== undefined
+        ? paymentData.commissionRate
+        : ((p.service as any)?.barberCommissionRate ?? barber?.commissionRate ?? 50)
+      const commission = p.amount * commissionRate / 100
+      const tip = p.tip || 0
+      return sum + commission + tip
+    }, 0)
 
-    const weekRevenue = await prisma.payment.aggregate({
+    // Calcular ganancias de la semana
+    const weekPayments = await prisma.payment.findMany({
       where: {
         barberId: params.id,
         createdAt: { gte: startOfWeek },
         status: 'COMPLETED'
       },
-      _sum: { amount: true }
+      include: {
+        service: true,
+      }
     })
+    const weekEarnings = weekPayments.reduce((sum, p) => {
+      // Usar comisión guardada en el pago (datos históricos), sino usar del servicio actual
+      const paymentData = p as any
+      const commissionRate = paymentData.commissionRate !== null && paymentData.commissionRate !== undefined
+        ? paymentData.commissionRate
+        : ((p.service as any)?.barberCommissionRate ?? barber?.commissionRate ?? 50)
+      const commission = p.amount * commissionRate / 100
+      const tip = p.tip || 0
+      return sum + commission + tip
+    }, 0)
 
-    const monthRevenue = await prisma.payment.aggregate({
+    // Calcular ganancias del mes
+    const monthPayments = await prisma.payment.findMany({
       where: {
         barberId: params.id,
         createdAt: { gte: startOfMonth },
         status: 'COMPLETED'
       },
-      _sum: { amount: true }
+      include: {
+        service: true,
+      }
     })
+    const monthEarnings = monthPayments.reduce((sum, p) => {
+      // Usar comisión guardada en el pago (datos históricos), sino usar del servicio actual
+      const paymentData = p as any
+      const commissionRate = paymentData.commissionRate !== null && paymentData.commissionRate !== undefined
+        ? paymentData.commissionRate
+        : ((p.service as any)?.barberCommissionRate ?? barber?.commissionRate ?? 50)
+      const commission = p.amount * commissionRate / 100
+      const tip = p.tip || 0
+      return sum + commission + tip
+    }, 0)
 
     // Cantidad de servicios HOY (ya filtrado arriba)
     const todayServices = todayPayments.length
@@ -83,18 +122,31 @@ export async function GET(
       }
     })
 
-    // Promedio de servicios (últimos 30 días)
-    const averageStats = await prisma.payment.aggregate({
+    // Promedio de ganancias por servicio (últimos 30 días)
+    const averagePayments = await prisma.payment.findMany({
       where: {
         barberId: params.id,
         createdAt: { gte: thirtyDaysAgo },
         status: 'COMPLETED'
       },
-      _avg: { amount: true },
-      _count: { id: true }
+      include: {
+        service: true,
+      }
     })
+    const averageEarnings = averagePayments.length > 0 
+      ? averagePayments.reduce((sum, p) => {
+          // Usar comisión guardada en el pago (datos históricos), sino usar del servicio actual
+          const paymentData = p as any
+          const commissionRate = paymentData.commissionRate !== null && paymentData.commissionRate !== undefined
+            ? paymentData.commissionRate
+            : ((p.service as any)?.barberCommissionRate ?? barber?.commissionRate ?? 50)
+          const commission = p.amount * commissionRate / 100
+          const tip = p.tip || 0
+          return sum + commission + tip
+        }, 0) / averagePayments.length
+      : 0
 
-    // Servicios recientes del barbero
+    // Servicios recientes del barbero con datos de tiempo
     const recentServices = await prisma.payment.findMany({
       where: {
         barberId: params.id,
@@ -102,32 +154,44 @@ export async function GET(
       },
       take: 10,
       orderBy: { createdAt: 'desc' },
-      include: {
+      select: {
+        id: true,
+        amount: true,
+        tip: true,
+        method: true,
+        createdAt: true,
+        serviceStartTime: true,
+        serviceEndTime: true,
+        serviceDuration: true,
         service: { select: { name: true, duration: true } },
         client: { select: { name: true, phone: true } }
       }
     })
 
-    // Obtener datos del barbero incluyendo comisión
-    const barber = await prisma.user.findUnique({
-      where: { id: params.id },
-      select: { id: true, name: true, commissionRate: true }
-    })
+
+    console.log('📊 Estadísticas calculadas para barbero:', barber?.name)
+    console.log('💰 Today Earnings:', todayEarnings)
+    console.log('💰 Week Earnings:', weekEarnings)
+    console.log('💰 Month Earnings:', monthEarnings)
+    console.log('📅 Today Services:', todayServices)
+    console.log('📅 Week Services:', weekServices)
+    console.log('📅 Month Services:', monthServices)
 
     return NextResponse.json({
-      todayRevenue: todayRevenue._sum.amount || 0,
-      weekRevenue: weekRevenue._sum.amount || 0,
-      monthRevenue: monthRevenue._sum.amount || 0,
+      todayEarnings,
+      weekEarnings,
+      monthEarnings,
       todayServices,
       weekServices,
       monthServices,
-      averageService: averageStats._avg.amount || 0,
+      averageEarnings,
       barber: barber,
       recentServices: recentServices.map(payment => ({
         id: payment.id,
         serviceName: payment.service.name,
         serviceDurationMinutes: payment.service.duration,
         amount: payment.amount,
+        tip: payment.tip || 0,
         method: payment.method,
         clientName: payment.client?.name,
         clientPhone: payment.client?.phone,

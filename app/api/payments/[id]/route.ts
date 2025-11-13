@@ -15,10 +15,30 @@ export async function PUT(
       )
     }
 
-    // Obtener el servicio para actualizar el monto
+    // Obtener el pago actual para obtener el barbero
+    const existingPayment = await prisma.payment.findUnique({
+      where: { id: params.id },
+      select: {
+        barberId: true,
+      }
+    })
+
+    if (!existingPayment) {
+      return NextResponse.json(
+        { error: 'Pago no encontrado' },
+        { status: 404 }
+      )
+    }
+
+    // Obtener el servicio NUEVO que se está asignando
     const service = await prisma.service.findUnique({
       where: { id: serviceId },
-      select: { price: true }
+      select: {
+        price: true,
+        name: true,
+        isServiceCut: true,
+        barberCommissionRate: true,
+      }
     })
 
     if (!service) {
@@ -28,14 +48,38 @@ export async function PUT(
       )
     }
 
+    // Obtener el barbero para calcular la comisión
+    const barber = await prisma.user.findUnique({
+      where: { id: existingPayment.barberId },
+      select: {
+        commissionRate: true,
+      }
+    })
+
+    if (!barber) {
+      return NextResponse.json(
+        { error: 'Barbero no encontrado' },
+        { status: 404 }
+      )
+    }
+
+    // IMPORTANTE: Cuando se edita un pago desde "Servicios del Día",
+    // DEBEMOS actualizar los datos históricos con los valores del NUEVO servicio
+    // Esto permite corregir errores o cambiar servicios específicos
+    const commissionRate = service.barberCommissionRate ?? barber.commissionRate
+
     const payment = await prisma.payment.update({
       where: {
         id: params.id,
       },
       data: {
-        serviceId,
-        clientId: clientId || null,
+        serviceId, // Cambiar la referencia al servicio
+        clientId: clientId || null, // Cambiar el cliente si es necesario
+        // Actualizar los datos históricos con los valores del NUEVO servicio
         amount: service.price,
+        servicePrice: service.price,
+        commissionRate: commissionRate,
+        isServiceCut: service.isServiceCut,
       },
       include: {
         barber: { select: { name: true } },
